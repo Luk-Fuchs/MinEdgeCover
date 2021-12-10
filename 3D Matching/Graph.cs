@@ -207,6 +207,7 @@ namespace _3D_Matching
         public bool IsCovered = false;
         public int TimesCovered = 0;
         public int[] Interval;
+        public double hardness = 0.0;  //high if several attempts, matching this vertex failtured
         public Vertex(int id)
         {
             this.Id = id;

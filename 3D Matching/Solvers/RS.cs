@@ -128,19 +128,17 @@ namespace _3D_Matching.Solvers
 
                     }
                 }
-                else if (_mode == "byDegreeUpdating2")
+                else if (_mode == "byDegreeUpdatingAndRegret")
                 {
-                    var edgesCopy = _edges.ToList();
                     var vertexDegrees = new int[_graph.Vertices.Count];
-                    for (int i = 0; i < edgesCopy.Count; i++)
+                    for (int i = 0; i < _edges.Count; i++)
                     {
-                        foreach (var vertexId in edgesCopy[i].VerticesIds)
+                        foreach (var vertexId in _edges[i].VerticesIds)
                             vertexDegrees[vertexId]++;
                     }
-                    for (int i = 0; i < edgesCopy.Count; i++)
-                        edgesCopy[i].property1 = -edgesCopy[i].Vertices.Count * 100 + edgesCopy[i].Vertices.Select(z => vertexDegrees[z.Id]).Sum()+ runTrough * _random.NextDouble();
+                    initializeDegrees(_random, runTrough, vertexDegrees);
                     int amountOfCoveredVertices = 0;
-                    edgesCopy = edgesCopy.OrderBy(_ => _.property1).ToList();
+                    var edgesCopy = new LinkedList<Edge>(_edges.OrderBy(_ => _.property1));
 
                     while (amountOfCoveredVertices < _graph.Vertices.Count)
                     {
@@ -149,65 +147,53 @@ namespace _3D_Matching.Solvers
                             resTmp.AddRange(_graph.Edges);
                             break;
                         }
-                        var edge = edgesCopy[0];
+                        var edge = edgesCopy.First.Value;
                         var degreeModifikation = new int[_graph.Vertices.Count];
                         foreach (var vertex in edge.Vertices)
                         {
+                            vertex.hardness += 1.0/(edge.Vertices.Count*edge.Vertices.Count);
                             vertex.IsCovered = true;
                             vertex.TimesCovered = 1;
                         }
                         int i = 0;
-                        var edgeHasBeenRemoved = false;
-                        while (i < edgesCopy.Count)
+                        var linkedEdge = edgesCopy.First;
+                        while (linkedEdge != null)
                         {
+                            var tmp = linkedEdge.Next;
                             foreach (var vertexId in edge.VerticesIds)
-                                if (edgesCopy[i].VerticesIds.Contains(vertexId))
+                                if (linkedEdge.Value.VerticesIds.Contains(vertexId))
                                 {
-                                    foreach (var secondVertexId in edgesCopy[i].VerticesIds)
+                                    foreach (var secondVertexId in linkedEdge.Value.VerticesIds)
                                         degreeModifikation[secondVertexId]++;
-                                    edgesCopy.RemoveAt(i);
-                                    edgeHasBeenRemoved = true;
+                                    edgesCopy.Remove(linkedEdge);
                                     break;
                                 }
-                            if (!edgeHasBeenRemoved)
-                                i++;
-                            edgeHasBeenRemoved = false;
+                            linkedEdge = tmp;
                         }
 
-                        for (int j = 0;j< edgesCopy.Count; j++)     //update vertex degrees
+                        foreach (var tmpEdge in edgesCopy)     //update vertex degrees
                         {
-                            foreach(var vertexId in edgesCopy[j].VerticesIds)
+                            foreach (var vertexId in tmpEdge.VerticesIds)
                             {
-                                edgesCopy[j].property1 -= degreeModifikation[vertexId];
+                                tmpEdge.property1 -= degreeModifikation[vertexId];
                             }
                         }
-                        //update edge ordering
-                        int offset;
-                        for(i = 0; i < edgesCopy.Count; i++)
+                        var activeNode = edgesCopy.First;
+                        while (activeNode != null)
                         {
-                            for(offset = 1; offset <= i; offset++)
+                            var tmp = activeNode.Next;
+                            var offsetNode = activeNode;
+                            while (offsetNode.Previous != null && offsetNode.Value.property1 < activeNode.Value.property1)
                             {
-                                if (edgesCopy[i - offset].property1 <= edgesCopy[i].property1)
-                                    break;
+                                offsetNode = offsetNode.Previous;
                             }
-                            if (offset != 1)
+                            if (offsetNode != activeNode)
                             {
-                                var tmp = edgesCopy[i];
-                                edgesCopy.RemoveAt(i);
-                                edgesCopy.Insert(i - offset + 1, tmp);
+                                edgesCopy.Remove(activeNode);
+                                edgesCopy.AddAfter(offsetNode, activeNode);
                             }
+                            activeNode = tmp;
                         }
-
-
-
-
-                        //Debug!
-                        //var test2 = edgesCopy.Select(_ => _.property1).ToList();
-                        //for (i = 0; i < edgesCopy.Count - 1; i++)
-                        //{
-                        //    if (edgesCopy[i + 1].property1 < edgesCopy[i].property1 && i!=0)
-                        //        ;
-                        //}
 
 
                         resTmp.Add(edge);
@@ -314,6 +300,7 @@ namespace _3D_Matching.Solvers
                     }
                 }
 
+                //Console.Write(resTmp.Count +",");
                 if (resTmp.Count < resMin.Count || resMin.Count == 0)
                     resMin = resTmp.ToList();
 
@@ -336,8 +323,11 @@ namespace _3D_Matching.Solvers
             for (int i = 0; i < _edges.Count; i++)
             {
                 _edges[i].property1 = -_edges[i].Vertices.Count * 100 + runTrough * _random.NextDouble();
-                foreach (var vertexId in _edges[i].VerticesIds)
-                    _edges[i].property1 += vertexDegrees[vertexId];
+                foreach (var vertex in _edges[i].Vertices)
+                {
+                    _edges[i].property1 += vertexDegrees[vertex.Id];
+                    _edges[i].property1 += -vertex.hardness;
+                }
             }
         }
     }

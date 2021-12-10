@@ -47,10 +47,10 @@ namespace _3D_Matching
             int iterations = 10;
 
             var solvers = new List<IMinimumEdgecoveringSolver> {
-                new RS(),
-                new RS(mode: "byDegree"),
-                new RS(mode: "byDegreeUpdating"),
-                new RS(mode: "byDegreeUpdating2"),
+                //new RS(),
+                //new RS(mode: "byDegree"),
+                //new RS(mode: "byDegreeUpdating"),
+                new RS(mode: "byDegreeUpdatingAndRegret"),  //scheint bis jetzt nicht sinnvoll
                 new RS(mode: "byDegreeUpdating3"),
                 //new SAS(),
                 //new RORTS(0,preCalculationTime:20),
