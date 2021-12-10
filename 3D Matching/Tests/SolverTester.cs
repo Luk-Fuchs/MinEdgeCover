@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,7 +20,13 @@ namespace _3D_Matching.Tests
         {
             var resData = new String[solvers.Count,(int)TestAttribute.Length];
             var time = new Stopwatch();
-            var graphs = Enumerable.Range(0, (int)iterations).Select(_=>Graph.GenerateRandomGraph(n,m)).ToArray();
+            //var graphs = Enumerable.Range(0, (int)iterations).Select(_=>Graph.GenerateRandomGraph(n,m)).ToArray();
+
+
+            String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\TestData";
+            string[] filePaths = Directory.GetFiles(path);
+            var graphs = Enumerable.Range(0, Math.Min((int)iterations,filePaths.Length)).Select(_=>(Graph.BuildGraphFromCSV(filePaths[_]))).ToArray();
+            iterations = graphs.Count();
 
             for (int i = 0; i < solvers.Count; i++)
             {

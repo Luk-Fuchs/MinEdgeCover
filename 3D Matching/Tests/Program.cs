@@ -2,6 +2,7 @@
 using _3D_Matching.Tests;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace _3D_Matching
@@ -10,20 +11,51 @@ namespace _3D_Matching
     {
         static void Main(string[] args)
         {
+
+            //var time = new Stopwatch();
+            //time.Start();
+            //var list = new List<int>(Enumerable.Range(0, 300));
+            //for (int i = 0; i < 10000000; i++)
+            //{
+            //    list.RemoveAt(1);
+            //    list.Insert(1,0);
+            //}
+            //time.Stop();
+            //Console.WriteLine(time.ElapsedMilliseconds);
+            //var link = new LinkedList<int>(Enumerable.Range(0, 300));
+            //for (int i = 0; i < 10000000; i++)
+            //{
+            //    var node = link.First;
+            //    node = node.Next;
+            //    link.Remove(node);
+            //    link.AddBefore(link.First, node);
+            //}
+            //time.Stop();
+            //Console.WriteLine(time.ElapsedMilliseconds);
+
+            //time.Restart();
+            //return;
+
+
+
+
+
             var parameters = new Dictionary<String, double>();
-            parameters.Add("maxTime", 40.0);
+            parameters.Add("maxTime",30);
             int n = 320;        //320
             int m = 350;
-            int iterations = 1;
+            int iterations = 10;
 
             var solvers = new List<IMinimumEdgecoveringSolver> {
                 new RS(),
                 new RS(mode: "byDegree"),
                 new RS(mode: "byDegreeUpdating"),
+                new RS(mode: "byDegreeUpdating2"),
+                new RS(mode: "byDegreeUpdating3"),
                 //new SAS(),
-                new RORTS(0,preCalculationTime:20),
-                new RORTS(20,preCalculationTime:20),
-                new RORTS(40,preCalculationTime:20,mode:"partialOptimal"),
+                //new RORTS(0,preCalculationTime:20),
+                //new RORTS(20,preCalculationTime:20),
+                //new RORTS(40,preCalculationTime:20,mode:"partialOptimal"),
                 //new RORTS(20,preCalculationTime:20, mode:"minDegree"),
                 //new RORTS(20,preCalculationTime:20,mode:"artificalThinning"),
                 //new ORTS(),

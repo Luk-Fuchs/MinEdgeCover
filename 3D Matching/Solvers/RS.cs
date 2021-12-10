@@ -47,7 +47,15 @@ namespace _3D_Matching.Solvers
                 else if (_mode == "byDegree")
                 {
                     var edgesCopy = _edges.ToList();
-                    var vertexDegrees = _graph.Vertices.Select(_ => _edges.Where(x => x.Vertices.Contains(_)).ToList().Count).ToArray();
+
+                    var vertexDegrees = new int[_graph.Vertices.Count];
+                    for (int i = 0; i < edgesCopy.Count; i++)
+                    {
+                        foreach (var vertexId in edgesCopy[i].VerticesIds)
+                            vertexDegrees[vertexId]++;
+                    }
+
+
                     foreach (var edge in _edges.OrderBy(_ => -_.Vertices.Count * 100 + _.Vertices.Select(x => vertexDegrees[x.Id]).Sum() + _random.NextDouble()))
                     {
                         if (edge.AllVerticesAreUncovered())
@@ -65,23 +73,54 @@ namespace _3D_Matching.Solvers
                 else if (_mode == "byDegreeUpdating")
                 {
                     var edgesCopy = _edges.ToList();
-                    var vertexDegrees = _graph.Vertices.Select(_ => _edges.Where(x => x.Vertices.Contains(_)).Count()).ToArray();
+                    //var vertexDegrees = _graph.Vertices.Select(_ => _edges.Where(x => x.Vertices.Contains(_)).Count()).ToList();
+                    var vertexDegrees = new int[_graph.Vertices.Count];
+                    for (int i = 0; i< edgesCopy.Count; i++)
+                    {
+                        foreach (var vertexId in edgesCopy[i].VerticesIds)
+                            vertexDegrees[vertexId]++;
+                    }
                     int amountOfCoveredVertices = 0;
+
+                    //edgesCopy = edgesCopy.OrderBy(_ => -_.Vertices.Count * 100 + _.Vertices.Select(z => vertexDegrees[z.Id]).Sum() + runTrough * _random.NextDouble()).ToList();
+
                     while (amountOfCoveredVertices < _graph.Vertices.Count)
                     {
+                        if (edgesCopy.Count == 0)
+                        {
+                            resTmp.AddRange(_graph.Edges);
+                            break;
+                        }
+                        //Edge = edgesCopy.First();
                         var edge = edgesCopy.OrderBy(_ => -_.Vertices.Count * 100 + _.Vertices.Select(z => vertexDegrees[z.Id]).Sum() + runTrough * _random.NextDouble()).First(); //.Where(_ => _.Vertices.Where(y => !y.IsCovered).Count() ==_.Vertices.Count)
                         //Where(_ => _.Vertices.Where(y => y.IsCovered).Count() == 0).
+                        var degreeModifikation = new int[_graph.Vertices.Count];
                         foreach (var vertex in edge.Vertices)
                         {
                             vertex.IsCovered = true;
                             vertex.TimesCovered = 1;
                         }
 
-                        foreach (var x in edgesCopy.Where(_ => _.Vertices.Where(y => y.IsCovered).Count() > 0).ToList())
+                        //foreach (var x in edgesCopy.Where(_ => _.Vertices.Where(y => y.IsCovered).Count() > 0).ToList())
+                        //{
+                        //    edgesCopy.Remove(x);
+                        //    foreach (var vertex in x.Vertices)
+                        //        vertexDegrees[vertex.Id]--;
+                        //}
+                        int i = 0;
+                        var edgeHasBeenRemoved = false;
+                        while (i < edgesCopy.Count)
                         {
-                            edgesCopy.Remove(x);
-                            foreach (var vertex in x.Vertices)
-                                vertexDegrees[vertex.Id]--;
+                            foreach (var vertexId in edge.VerticesIds)
+                                if (edgesCopy[i].VerticesIds.Contains(vertexId))
+                                {
+                                    edgesCopy.RemoveAt(i);
+                                    edgeHasBeenRemoved = true;
+                                    break;
+                                }
+                            if (!edgeHasBeenRemoved)
+                                i++;
+                            edgeHasBeenRemoved = false;
                         }
 
                         resTmp.Add(edge);
@@ -89,6 +128,192 @@ namespace _3D_Matching.Solvers
 
                     }
                 }
+                else if (_mode == "byDegreeUpdating2")
+                {
+                    var edgesCopy = _edges.ToList();
+                    var vertexDegrees = new int[_graph.Vertices.Count];
+                    for (int i = 0; i < edgesCopy.Count; i++)
+                    {
+                        foreach (var vertexId in edgesCopy[i].VerticesIds)
+                            vertexDegrees[vertexId]++;
+                    }
+                    for (int i = 0; i < edgesCopy.Count; i++)
+                        edgesCopy[i].property1 = -edgesCopy[i].Vertices.Count * 100 + edgesCopy[i].Vertices.Select(z => vertexDegrees[z.Id]).Sum()+ runTrough * _random.NextDouble();
+                    int amountOfCoveredVertices = 0;
+                    edgesCopy = edgesCopy.OrderBy(_ => _.property1).ToList();
+
+                    while (amountOfCoveredVertices < _graph.Vertices.Count)
+                    {
+                        if (edgesCopy.Count == 0)
+                        {
+                            resTmp.AddRange(_graph.Edges);
+                            break;
+                        }
+                        var edge = edgesCopy[0];
+                        var degreeModifikation = new int[_graph.Vertices.Count];
+                        foreach (var vertex in edge.Vertices)
+                        {
+                            vertex.IsCovered = true;
+                            vertex.TimesCovered = 1;
+                        }
+                        int i = 0;
+                        var edgeHasBeenRemoved = false;
+                        while (i < edgesCopy.Count)
+                        {
+                            foreach (var vertexId in edge.VerticesIds)
+                                if (edgesCopy[i].VerticesIds.Contains(vertexId))
+                                {
+                                    foreach (var secondVertexId in edgesCopy[i].VerticesIds)
+                                        degreeModifikation[secondVertexId]++;
+                                    edgesCopy.RemoveAt(i);
+                                    edgeHasBeenRemoved = true;
+                                    break;
+                                }
+                            if (!edgeHasBeenRemoved)
+                                i++;
+                            edgeHasBeenRemoved = false;
+                        }
+
+                        for (int j = 0;j< edgesCopy.Count; j++)     //update vertex degrees
+                        {
+                            foreach(var vertexId in edgesCopy[j].VerticesIds)
+                            {
+                                edgesCopy[j].property1 -= degreeModifikation[vertexId];
+                            }
+                        }
+                        //update edge ordering
+                        int offset;
+                        for(i = 0; i < edgesCopy.Count; i++)
+                        {
+                            for(offset = 1; offset <= i; offset++)
+                            {
+                                if (edgesCopy[i - offset].property1 <= edgesCopy[i].property1)
+                                    break;
+                            }
+                            if (offset != 1)
+                            {
+                                var tmp = edgesCopy[i];
+                                edgesCopy.RemoveAt(i);
+                                edgesCopy.Insert(i - offset + 1, tmp);
+                            }
+                        }
+
+
+
+
+                        //Debug!
+                        //var test2 = edgesCopy.Select(_ => _.property1).ToList();
+                        //for (i = 0; i < edgesCopy.Count - 1; i++)
+                        //{
+                        //    if (edgesCopy[i + 1].property1 < edgesCopy[i].property1 && i!=0)
+                        //        ;
+                        //}
+
+
+                        resTmp.Add(edge);
+                        amountOfCoveredVertices += edge.Vertices.Count;
+
+                    }
+                }
+                else if (_mode == "byDegreeUpdating3")
+                {
+                    var vertexDegrees = new int[_graph.Vertices.Count];
+                    for (int i = 0; i < _edges.Count; i++)
+                    {
+                        foreach (var vertexId in _edges[i].VerticesIds)
+                            vertexDegrees[vertexId]++;
+                    }
+                    initializeDegrees(_random, runTrough, vertexDegrees);
+                    int amountOfCoveredVertices = 0;
+                    var edgesCopy = new LinkedList<Edge>(_edges.OrderBy(_ => _.property1));
+
+                    while (amountOfCoveredVertices < _graph.Vertices.Count)
+                    {
+                        if (edgesCopy.Count == 0)
+                        {
+                            resTmp.AddRange(_graph.Edges);
+                            break;
+                        }
+                        var edge = edgesCopy.First.Value;
+                        var degreeModifikation = new int[_graph.Vertices.Count];
+                        foreach (var vertex in edge.Vertices)
+                        {
+                            vertex.IsCovered = true;
+                            vertex.TimesCovered = 1;
+                        }
+                        int i = 0;
+                        var linkedEdge = edgesCopy.First;
+                        while (linkedEdge != null)
+                        {
+                            var tmp = linkedEdge.Next;
+                            foreach (var vertexId in edge.VerticesIds)
+                                if (linkedEdge.Value.VerticesIds.Contains(vertexId))
+                                {
+                                    foreach (var secondVertexId in linkedEdge.Value.VerticesIds)
+                                        degreeModifikation[secondVertexId]++;
+                                    edgesCopy.Remove(linkedEdge);
+                                    break;
+                                }
+                            linkedEdge = tmp;
+                        }
+
+                        foreach (var tmpEdge in edgesCopy)     //update vertex degrees
+                        {
+                            foreach (var vertexId in tmpEdge.VerticesIds)
+                            {
+                                tmpEdge.property1 -= degreeModifikation[vertexId];
+                            }
+                        }
+                        //update edge ordering
+                        //int offset;
+                        //for (i = 0; i < edgesCopy.Count; i++)
+                        //{
+                        //    for (offset = 1; offset <= i; offset++)
+                        //    {
+                        //        if (edgesCopy[i - offset].property1 <= edgesCopy[i].property1)
+                        //            break;
+                        //    }
+                        //    if (offset != 1)
+                        //    {
+                        //        var tmp = edgesCopy[i];
+                        //        edgesCopy.RemoveAt(i);
+                        //        edgesCopy.Insert(i - offset + 1, tmp);
+                        //    }
+                        //}
+                        var activeNode = edgesCopy.First;
+                        while (activeNode != null)
+                        {
+                            var tmp = activeNode.Next;
+                            var offsetNode = activeNode;
+                            while (offsetNode.Previous != null && offsetNode.Value.property1 < activeNode.Value.property1)
+                            {
+                                offsetNode = offsetNode.Previous;
+                            }
+                            if (offsetNode != activeNode)
+                            {
+                                edgesCopy.Remove(activeNode);
+                                edgesCopy.AddAfter(offsetNode, activeNode);
+                            }
+                            activeNode = tmp;
+                        }
+
+
+
+                        //Debug!
+                        //var test2 = edgesCopy.Select(_ => _.property1).ToList();
+                        //for (i = 0; i < edgesCopy.Count - 1; i++)
+                        //{
+                        //    if (edgesCopy[i + 1].property1 < edgesCopy[i].property1 && i!=0)
+                        //        ;
+                        //}
+
+
+                        resTmp.Add(edge);
+                        amountOfCoveredVertices += edge.Vertices.Count;
+
+                    }
+                }
+
                 if (resTmp.Count < resMin.Count || resMin.Count == 0)
                     resMin = resTmp.ToList();
 
@@ -101,8 +326,19 @@ namespace _3D_Matching.Solvers
                 resTmp.Clear();
                 runTrough++;
             }
-            Console.WriteLine(runTrough);
+            //Console.WriteLine(runTrough);
             return resMin;
+        }
+
+
+        private void initializeDegrees(Random _random, int runTrough, int[] vertexDegrees)
+        {
+            for (int i = 0; i < _edges.Count; i++)
+            {
+                _edges[i].property1 = -_edges[i].Vertices.Count * 100 + runTrough * _random.NextDouble();
+                foreach (var vertexId in _edges[i].VerticesIds)
+                    _edges[i].property1 += vertexDegrees[vertexId];
+            }
         }
     }
 }
