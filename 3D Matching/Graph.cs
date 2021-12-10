@@ -115,11 +115,45 @@ namespace _3D_Matching
         }
 
         public static Graph BuildGraphFromCSV(String path)
-        {
+        { 
+            string[] inputLines = System.IO.File.ReadAllLines(path);
+
+            int rowCount = 4;
+            var vertices = new List<Vertex>();//[Int32.Parse(inputLines[2].Split(": ")[1])];
+            var edges = new List<Edge>();
+            for (; rowCount < inputLines.Length; rowCount++)
+            {
+                var activeLine = inputLines[rowCount];
+                if (activeLine[0] == '=')
+                    break;
+                var vertexId = Int32.Parse(activeLine.Split(";")[0].Split(":")[1]);
+                var newVertex = new Vertex(vertexId);
+                newVertex.Interval = activeLine.Split(";")[3].Split(" - ").Select(_ => Int32.Parse(_)).ToArray();
+                vertices.Add(newVertex);
+                if(activeLine.Split(";")[1]=="True")
+                    edges.Add(new Edge(new List<Vertex> { newVertex }));
+            }
+            
+            for (rowCount++; rowCount < inputLines.Length; rowCount++)
+            {
+                var activeLine = inputLines[rowCount];
+                if (activeLine.Contains("--"))
+                    continue;
+                var newEdge = new Edge(activeLine.Split("->").Select(_ => vertices[Int32.Parse(_)]).ToList());
+                edges.Add(newEdge);
+            }
 
 
-            return null;
+            //foreach (var vertex in vertices)        //wichtig falls kein matching existiert
+            //{
+            //    edges.Add(new Edge(new List<Vertex> { vertex }));
+            //}
+
+            var graph = new Graph(edges, vertices);
+            return graph;
         }
+
+
     }
 
     class Edge
@@ -127,6 +161,7 @@ namespace _3D_Matching
         public List<Vertex> Vertices;
         public List<int> VerticesIds;
         public bool IsInCover = false;
+        public double property1;
         public Edge(List<Vertex> vertices)
         {
             Vertices = vertices;
