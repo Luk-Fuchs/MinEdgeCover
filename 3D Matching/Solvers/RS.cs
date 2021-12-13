@@ -17,6 +17,8 @@ namespace _3D_Matching.Solvers
             _mode = mode;
         }
 
+        public override String Name { get => this.GetType().Name + "|" + _mode; }
+
         public override List<Edge> Run(Dictionary<string, double> parameters)
         {
             double maxTime = parameters["maxTime"];
@@ -29,22 +31,7 @@ namespace _3D_Matching.Solvers
 
             while (time.ElapsedMilliseconds < maxTime)
             {
-                if (_mode == "normal")
-                {
-                    foreach (var edge in _edges.OrderBy(_ => -_.Vertices.Count + _random.NextDouble()))
-                    {
-                        if (edge.AllVerticesAreUncovered())
-                        {
-                            resTmp.Add(edge);
-                            foreach (var vertex in edge.Vertices)
-                            {
-                                vertex.IsCovered = true;
-                                vertex.TimesCovered = 1;
-                            }
-                        }
-                    }
-                }
-                else if (_mode == "byDegree")
+                if (_mode == "byDegree")
                 {
                     var edgesCopy = _edges.ToList();
 
@@ -56,7 +43,7 @@ namespace _3D_Matching.Solvers
                     }
 
 
-                    foreach (var edge in _edges.OrderBy(_ => -_.Vertices.Count * 100 + _.Vertices.Select(x => vertexDegrees[x.Id]).Sum() + _random.NextDouble()))
+                    foreach (var edge in _edges.OrderBy(_ => -_.Vertices.Count * 1000000 + _.Vertices.Select(x => vertexDegrees[x.Id]).Sum() + _random.NextDouble()))
                     {
                         if (edge.AllVerticesAreUncovered())
                         {
@@ -201,7 +188,7 @@ namespace _3D_Matching.Solvers
 
                     }
                 }
-                else if (_mode == "byDegreeUpdating3")
+                else if (_mode == "byDegreeUpdating_V3")
                 {
                     var vertexDegrees = new int[_graph.Vertices.Count];
                     for (int i = 0; i < _edges.Count; i++)
@@ -269,16 +256,19 @@ namespace _3D_Matching.Solvers
                         var activeNode = edgesCopy.First;
                         while (activeNode != null)
                         {
+                            int debug = 0;
                             var tmp = activeNode.Next;
                             var offsetNode = activeNode;
                             while (offsetNode.Previous != null && offsetNode.Value.property1 < activeNode.Value.property1)
                             {
                                 offsetNode = offsetNode.Previous;
+                                debug++;
                             }
                             if (offsetNode != activeNode)
                             {
                                 edgesCopy.Remove(activeNode);
                                 edgesCopy.AddAfter(offsetNode, activeNode);
+                                Console.WriteLine(debug);
                             }
                             activeNode = tmp;
                         }
@@ -299,6 +289,21 @@ namespace _3D_Matching.Solvers
 
                     }
                 }
+                else //(_mode == "normal")
+                {
+                    foreach (var edge in _edges.OrderBy(_ => -_.Vertices.Count + _random.NextDouble()))
+                    {
+                        if (edge.AllVerticesAreUncovered())
+                        {
+                            resTmp.Add(edge);
+                            foreach (var vertex in edge.Vertices)
+                            {
+                                vertex.IsCovered = true;
+                                vertex.TimesCovered = 1;
+                            }
+                        }
+                    }
+                }
 
                 //Console.Write(resTmp.Count +",");
                 if (resTmp.Count < resMin.Count || resMin.Count == 0)
@@ -313,7 +318,7 @@ namespace _3D_Matching.Solvers
                 resTmp.Clear();
                 runTrough++;
             }
-            //Console.WriteLine(runTrough);
+            Console.WriteLine(runTrough);
             return resMin;
         }
 
@@ -322,7 +327,7 @@ namespace _3D_Matching.Solvers
         {
             for (int i = 0; i < _edges.Count; i++)
             {
-                _edges[i].property1 = -_edges[i].Vertices.Count * 100 + runTrough * _random.NextDouble();
+                _edges[i].property1 = -_edges[i].Vertices.Count * 100000 + runTrough * _random.NextDouble();
                 foreach (var vertex in _edges[i].Vertices)
                 {
                     _edges[i].property1 += vertexDegrees[vertex.Id];
