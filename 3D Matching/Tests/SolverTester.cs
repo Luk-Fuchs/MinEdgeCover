@@ -16,17 +16,18 @@ namespace _3D_Matching.Tests
         {
 
         }
-        public static String[,] RunSolvers(List<IMinimumEdgecoveringSolver> solvers, Dictionary<String,double> parameter, double iterations = 2, int n=100, int m = 200)
+        public static String[,] RunSolvers(List<IMinimumEdgecoveringSolver> solvers, Dictionary<String,double> parameter, double iterations = 2, int n=100, double p1 = 0.1, double p2 = 0.1, double p3 = 0.1)
         {
             var resData = new String[solvers.Count,(int)TestAttribute.Length];
             var time = new Stopwatch();
-            //var graphs = Enumerable.Range(0, (int)iterations).Select(_=>Graph.GenerateRandomGraph(n,m)).ToArray();
 
 
-            String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\TestData";
-            string[] filePaths = Directory.GetFiles(path);
-            var graphs = Enumerable.Range(0, Math.Min((int)iterations,filePaths.Length)).Select(_=>(Graph.BuildGraphFromCSV(filePaths[_]))).ToArray();
-            iterations = graphs.Count();
+            var graphs = Enumerable.Range(0, (int)iterations).Select(_ => Graph.GenerateRandomGraph(n, p1:p1, p2:p2, p3:p3)).ToArray();
+
+            //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\TestData";
+            //string[] filePaths = Directory.GetFiles(path);
+            //var graphs = Enumerable.Range(0, Math.Min((int)iterations,filePaths.Length)).Select(_=>(Graph.BuildGraphFromCSV(filePaths[_]))).ToArray();
+            //iterations = graphs.Count();
 
             for (int i = 0; i < solvers.Count; i++)
             {

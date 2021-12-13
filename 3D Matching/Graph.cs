@@ -70,49 +70,29 @@ namespace _3D_Matching
             return edges;
         }
 
-        public static Graph GenerateRandomGraph(int n = 200, int m = 300)
+        public static Graph GenerateRandomGraph(int n = 200, double p1=0.1, double p2 = 0.1, double p3 = 0.1)
         {
-            var random = new Random(5);
+            var random = new Random();
             var vertices = Enumerable.Range(0, n).Select(_ => new Vertex(_)).ToList();
-            var edges = new List<Edge>();//Enumerable.Range(0, m).Select(_ => new Edge(new List<Vertex> { vertices[random.Next(0, n)], vertices[random.Next(0, n)], vertices[random.Next(0, n)] })).ToList();//new List<List<IVertex>>();
-                                         //edges.Add(new List<IVertex> { vertices[0], vertices[1], vertices[2] });
-
-            for (int i = 0; i < m; i++)
-            {
-                int a = random.Next(0, n);
-                int b = random.Next(0, n);
-                int c = random.Next(0, n);
-                while (a == b || b == c || c == a)
-                {
-                    a = random.Next(0, n);
-                    b = random.Next(0, n);
-                    c = random.Next(0, n);
-                }
-                var potNewEdge = new Edge(new List<Vertex> { vertices[a], vertices[b], vertices[c] });
-                if (!edges.Contains(potNewEdge))
-                    edges.Add(potNewEdge);
-            }
-            for (int i = 0; i < m; i++)
-            {
-                int a = random.Next(0, n);
-                int b = random.Next(0, n);
-                while (a == b)
-                {
-                    a = random.Next(0, n);
-                    b = random.Next(0, n);
-                }
-                //edges.Add(new Edge(new List<Vertex> { vertices[a], vertices[b] }));
-                var potNewEdge = new Edge(new List<Vertex> { vertices[a], vertices[b] });
-                if (!edges.Contains(potNewEdge))
-                    edges.Add(potNewEdge);
-            }
+            var edges = new List<Edge>();
 
             for (int i = 0; i < n; i++)
-                edges.Add(new Edge(new List<Vertex> { vertices[i] }));
+                for (int j = i + 1; j < n; j++)
+                    for (int k = j + 1; k < n; k++)
+                        if (random.NextDouble() < p3)
+                            edges.Add(new Edge(new List<Vertex> { vertices[i], vertices[j], vertices[k] }));
+            for (int i = 0; i < n; i++)
+                for (int j = i + 1; j < n; j++)
+                    if (random.NextDouble() < p2)
+                        edges.Add(new Edge(new List<Vertex> { vertices[i], vertices[j] }));
+            for (int i = 0; i < n; i++)
+                if (random.NextDouble() < p1)
+                    edges.Add(new Edge(new List<Vertex> { vertices[i] }));
 
             var graph = new Graph(edges, vertices);
             return graph;
         }
+
 
         public static Graph BuildGraphFromCSV(String path)
         { 

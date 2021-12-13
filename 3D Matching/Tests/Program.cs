@@ -41,17 +41,19 @@ namespace _3D_Matching
 
 
             var parameters = new Dictionary<String, double>();
-            parameters.Add("maxTime",30);
-            int n = 320;        //320
-            int m = 350;
-            int iterations = 10;
+            parameters.Add("maxTime",500);
+            int n = 300;        //320
+            double p3 = 0.01;
+            double p2 = 0.5;
+            double p1 = 0.5;
+            int iterations = 1;
 
             var solvers = new List<IMinimumEdgecoveringSolver> {
-                //new RS(),
+                //new RS("1"),
                 //new RS(mode: "byDegree"),
                 //new RS(mode: "byDegreeUpdating"),
-                new RS(mode: "byDegreeUpdatingAndRegret"),  //scheint bis jetzt nicht sinnvoll
-                new RS(mode: "byDegreeUpdating3"),
+                //new RS(mode: "byDegreeUpdatingAndRegret"),  //scheint bis jetzt nicht sinnvoll
+                new RS(mode: "byDegreeUpdating_V3"),
                 //new SAS(),
                 //new RORTS(0,preCalculationTime:20),
                 //new RORTS(20,preCalculationTime:20),
@@ -66,7 +68,7 @@ namespace _3D_Matching
             //    solvers.Add(new HillClimbSolver(i * 3));
             //}
             //var solverTester = new SolverTester();
-            var data = SolverTester.RunSolvers(solvers, parameters,iterations:iterations,n:n,m:m);
+            var data = SolverTester.RunSolvers(solvers, parameters,iterations:iterations,n:n,p1:p1,p2:p2,p3:p3);
 
             PrintData(data);
 
