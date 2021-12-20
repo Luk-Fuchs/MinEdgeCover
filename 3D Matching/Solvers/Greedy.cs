@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace _3D_Matching.Solvers
 {
-    class RS : IMinimumEdgecoveringSolver
+    class Greedy : IMinimumEdgecoveringSolver
     {
         Random random = new Random();
         String _mode = "normal";
 
-        public RS(String mode = "normal")
+        public Greedy(String mode = "normal")
         {
             _mode = mode;
         }
