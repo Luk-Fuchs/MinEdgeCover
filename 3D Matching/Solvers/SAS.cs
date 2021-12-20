@@ -21,7 +21,7 @@ namespace _3D_Matching.Solvers
         public override String Name { get => this.GetType().Name + "|" + _name; }
 
 
-        public override List<Edge> Run(Dictionary<string, double> parameters)
+        public override (List<Edge> cover, int iterations) Run(Dictionary<string, double> parameters)
         {
             double maxTime = parameters["maxTime"];
             int t = 0;
@@ -85,7 +85,7 @@ namespace _3D_Matching.Solvers
                     res.Add(new Edge(new List<Vertex> {vertex}));
                 }
             }
-            return res;
+            return (res,1);
         }
     }
 }

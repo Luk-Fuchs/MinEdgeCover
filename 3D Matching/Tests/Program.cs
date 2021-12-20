@@ -12,12 +12,12 @@ namespace _3D_Matching
         static void Main(string[] args)
         {
             var parameters = new Dictionary<String, double>();
-            parameters.Add("maxTime",300);
+            parameters.Add("maxTime",50);
             int n = 300;        //320
             double p3 = 0.01;
             double p2 = 0.1;
             double p1 = 0.5;
-            int iterations = 1;
+            int iterations = 10;
 
             var solvers = new List<IMinimumEdgecoveringSolver> {
                 //new RS("1"),
@@ -35,11 +35,11 @@ namespace _3D_Matching
                 new OnlineSolver(OnlineSolver.GenerateFunc3(120),"test"),
         };
 
-            //for (int j = 1; j < 15; j++)
-            //    solvers.Add(new SAS(j*0.2, "" + j + ""));
-
-
-            var data = SolverTester.RunSolvers(solvers, parameters,iterations:iterations,n:n,p1:p1,p2:p2,p3:p3);
+            var data = SolverTester.RunSolvers(solvers, 
+                                                parameters,
+                                                generationType: "readIn",            //"readIn", "random"
+                                                iterations:iterations,
+                                                n:n,p1:p1,p2:p2,p3:p3);
 
             PrintData(data);
 

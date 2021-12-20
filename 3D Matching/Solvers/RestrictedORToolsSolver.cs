@@ -35,7 +35,7 @@ namespace _3D_Matching.Solvers
             var bestRes = new List<Edge>();
             var solver = new RS();
             solver.initialize(_graph);
-            var edgeCover = solver.Run(parameters2);
+            var edgeCover = solver.Run(parameters2).cover;
             var twoSizeEdges = edgeCover.Where(_ => _.Vertices.Count == 2).ToList();
 
 
@@ -65,7 +65,7 @@ namespace _3D_Matching.Solvers
             var graph2 = new Graph(edges2, vertices2);
             var solver2 = new ORTS();
             solver2.initialize(graph2);
-            var edgeCover2 = solver2.Run(parameters);
+            var edgeCover2 = solver2.Run(parameters).cover;
             var res = edges3.Concat(edgeCover2).ToList();
 
 
@@ -111,7 +111,7 @@ namespace _3D_Matching.Solvers
             //return edgeCover;
         }
 
-        public override List<Edge> Run(Dictionary<string, double> parameters)
+        public override (List<Edge> cover, int iterations) Run(Dictionary<string, double> parameters)
         {
             var verticesCopy = _graph.Vertices.ToList();
             var edgesCopy = _edges.OrderBy(_ => -_.Vertices.Count + _random.NextDouble()).ToList();
@@ -207,7 +207,7 @@ namespace _3D_Matching.Solvers
 
                     var solver2 = new ORTS();
                     solver2.initialize(new Graph(eEdgesOfS,s));
-                    var partialRes = solver2.Run(parameters);//).ToList();
+                    var partialRes = solver2.Run(parameters).cover;//).ToList();
                     if(uncoveredVertices.Count() == 0)
                     {
                         edgeCover = edgeCover.Concat(partialRes).ToList();
@@ -229,9 +229,9 @@ namespace _3D_Matching.Solvers
             {
             var solver = new ORTS();
             solver.initialize(new Graph(edgesCopy,verticesCopy));
-            edgeCover = edgeCover.Concat(solver.Run(parameters)).ToList();
+            edgeCover = edgeCover.Concat(solver.Run(parameters).cover).ToList();
             }
-            return edgeCover;
+            return (edgeCover,-1);
         }
     }
 }

@@ -20,7 +20,7 @@ namespace _3D_Matching.Solvers
 
         public override String Name { get => this.GetType().Name + "|" + _mode; }
 
-        public override List<Edge> Run(Dictionary<string, double> parameters)
+        public override (List<Edge> cover,int iterations) Run(Dictionary<string, double> parameters)
         {
             double maxTime = parameters["maxTime"];
             var time = new Stopwatch();
@@ -102,8 +102,8 @@ namespace _3D_Matching.Solvers
                 resTmp.Clear();
                 runTrough++;
             }
-            Console.WriteLine(runTrough);
-            return resMin;
+            Console.WriteLine("iterations: "+runTrough);
+            return (resMin, runTrough);
         }
 
         public static double Func1(int i, int maxCount, int newCover, int vertexCount,int uncoveredVertexCountEdge)

@@ -21,6 +21,6 @@ namespace _3D_Matching.Solvers
                 vertex.TimesCovered = 0;
             }
         }
-        public abstract List<Edge> Run(Dictionary<String,double> parameters);
+        public abstract (List<Edge> cover,int iterations) Run(Dictionary<String,double> parameters);
     }
 }

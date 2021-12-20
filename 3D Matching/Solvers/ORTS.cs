@@ -13,7 +13,7 @@ namespace _3D_Matching.Solvers
         Solver solver = Solver.CreateSolver("SCIP");
         Variable[] x;
         
-        public override List<Edge> Run(Dictionary<string, double> parameters)
+        public override (List<Edge> cover, int iterations)  Run(Dictionary<string, double> parameters)
         {
             solver = Solver.CreateSolver("SCIP");
             x = _graph.Edges.Select(_ => solver.MakeIntVar(0.0, 1, String.Join(" ", _.Vertices))).ToArray();
@@ -41,7 +41,7 @@ namespace _3D_Matching.Solvers
                     res.Add(_graph.Edges[j]);
                     //Console.WriteLine(x[j].Name());
             }
-            return res;
+            return (res,1);
             //Console.WriteLine(solver.Objective().Value());
             //Console.WriteLine(solver.ExportModelAsLpFormat(false));
         }
