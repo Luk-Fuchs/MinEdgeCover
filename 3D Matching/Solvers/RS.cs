@@ -31,6 +31,8 @@ namespace _3D_Matching.Solvers
 
             while (time.ElapsedMilliseconds < maxTime)
             {
+                var uncoveredVertices = _graph.Vertices.Count;
+
                 if (_mode == "byDegree")
                 {
                     var edgesCopy = _edges.ToList();
@@ -48,6 +50,7 @@ namespace _3D_Matching.Solvers
                         if (edge.AllVerticesAreUncovered())
                         {
                             resTmp.Add(edge);
+                            uncoveredVertices -= edge.Vertices.Count;
                             foreach (var vertex in edge.Vertices)
                             {
                                 vertex.IsCovered = true;
@@ -75,11 +78,11 @@ namespace _3D_Matching.Solvers
                     {
                         if (edgesCopy.Count == 0)
                         {
-                            resTmp.AddRange(_graph.Edges);
+                            //resTmp.AddRange(_graph.Edges);
                             break;
                         }
                         //Edge = edgesCopy.First();
-                        var edge = edgesCopy.OrderBy(_ => -_.Vertices.Count * 100 + _.Vertices.Select(z => vertexDegrees[z.Id]).Sum() + runTrough * _random.NextDouble()).First(); //.Where(_ => _.Vertices.Where(y => !y.IsCovered).Count() ==_.Vertices.Count)
+                        var edge = edgesCopy.OrderBy(_ => -_.Vertices.Count * 10000 + _.Vertices.Select(z => vertexDegrees[z.Id]).Sum() + runTrough * _random.NextDouble()).First(); //.Where(_ => _.Vertices.Where(y => !y.IsCovered).Count() ==_.Vertices.Count)
                         //Where(_ => _.Vertices.Where(y => y.IsCovered).Count() == 0).
                         var degreeModifikation = new int[_graph.Vertices.Count];
                         foreach (var vertex in edge.Vertices)
@@ -111,6 +114,7 @@ namespace _3D_Matching.Solvers
                         }
 
                         resTmp.Add(edge);
+                        uncoveredVertices -= edge.Vertices.Count;
                         amountOfCoveredVertices += edge.Vertices.Count;
 
                     }
@@ -131,7 +135,7 @@ namespace _3D_Matching.Solvers
                     {
                         if (edgesCopy.Count == 0)
                         {
-                            resTmp.AddRange(_graph.Edges);
+                            //resTmp.AddRange(_graph.Edges);
                             break;
                         }
                         var edge = edgesCopy.First.Value;
@@ -184,6 +188,7 @@ namespace _3D_Matching.Solvers
 
 
                         resTmp.Add(edge);
+                        uncoveredVertices -= edge.Vertices.Count;
                         amountOfCoveredVertices += edge.Vertices.Count;
 
                     }
@@ -204,7 +209,7 @@ namespace _3D_Matching.Solvers
                     {
                         if (edgesCopy.Count == 0)
                         {
-                            resTmp.AddRange(_graph.Edges);
+                            //resTmp.AddRange(_graph.Edges);
                             break;
                         }
                         var edge = edgesCopy.First.Value;
@@ -285,6 +290,7 @@ namespace _3D_Matching.Solvers
 
 
                         resTmp.Add(edge);
+                        uncoveredVertices -= edge.Vertices.Count;
                         amountOfCoveredVertices += edge.Vertices.Count;
 
                     }
@@ -296,10 +302,29 @@ namespace _3D_Matching.Solvers
                         if (edge.AllVerticesAreUncovered())
                         {
                             resTmp.Add(edge);
+                            uncoveredVertices -= edge.Vertices.Count;
                             foreach (var vertex in edge.Vertices)
                             {
                                 vertex.IsCovered = true;
                                 vertex.TimesCovered = 1;
+                            }
+                        }
+                    }
+                }
+
+                if (uncoveredVertices != 0)
+                {
+                    foreach (var edge in _edges)
+                    {
+                        var newCoveredAmount = edge.NumberOfNewCoveredVertices();
+                        if (newCoveredAmount>0)
+                        {
+                            resTmp.Add(edge);
+                            uncoveredVertices -= newCoveredAmount;
+                            foreach (var vertex in edge.Vertices)
+                            {
+                                vertex.IsCovered = true;
+                                vertex.TimesCovered +=1;
                             }
                         }
                     }
@@ -318,7 +343,7 @@ namespace _3D_Matching.Solvers
                 resTmp.Clear();
                 runTrough++;
             }
-            Console.WriteLine(runTrough);
+            Console.WriteLine("iterations: " +runTrough);
             return resMin;
         }
 
