@@ -10,6 +10,15 @@ namespace _3D_Matching.Solvers
     class SAS : IMinimumEdgecoveringSolver
     {
         Random _random = new Random();
+        double _decay = 500;
+        String _name = "";
+        public SAS(double decay = 500, String name = "")
+        {
+            _decay = decay;
+            _name = name;
+        }
+
+        public override String Name { get => this.GetType().Name + "|" + _name; }
 
 
         public override List<Edge> Run(Dictionary<string, double> parameters)
@@ -19,7 +28,6 @@ namespace _3D_Matching.Solvers
             var time = new Stopwatch();
             time.Start();
             var res = new List<Edge>();
-            var decay = 500;
             while (time.ElapsedMilliseconds < maxTime)
             {
                 var activeIndex = _random.Next(0, _graph.Edges.Count);
@@ -40,7 +48,7 @@ namespace _3D_Matching.Solvers
                 }
                 else
                 {
-                    if (_edges[activeIndex].AllVerticesAreUncovered() || _random.NextDouble() < Math.Exp(-t / decay))
+                    if (_edges[activeIndex].AllVerticesAreUncovered() || _random.NextDouble() < Math.Exp(-t / _decay))
                     {
                         t++;
                         res.Add(_edges[activeIndex]);
@@ -52,16 +60,6 @@ namespace _3D_Matching.Solvers
                         _edges[activeIndex].IsInCover = true;
                     }
                 }
-
-
-                //else if (_edges[activeIndex].IsInCover == true && _random.NextDouble() < Math.Exp(-t/500))
-                //{
-                //    res.Remove(_edges[activeIndex]);
-                //    foreach (var vertex in _edges[activeIndex].Vertices)
-                //        vertex.IsCovered = false;
-                //    _edges[activeIndex].IsInCover = false;
-                //    t++;
-                //}
             }
             //Console.WriteLine("Rec Count" + res.Count);
             for (int activeIndex = 0; activeIndex < _graph.Edges.Count; activeIndex++)
