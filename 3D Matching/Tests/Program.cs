@@ -11,63 +11,34 @@ namespace _3D_Matching
     {
         static void Main(string[] args)
         {
-
-            //var time = new Stopwatch();
-            //time.Start();
-            //var list = new List<int>(Enumerable.Range(0, 300));
-            //for (int i = 0; i < 10000000; i++)
-            //{
-            //    list.RemoveAt(1);
-            //    list.Insert(1,0);
-            //}
-            //time.Stop();
-            //Console.WriteLine(time.ElapsedMilliseconds);
-            //var link = new LinkedList<int>(Enumerable.Range(0, 300));
-            //for (int i = 0; i < 10000000; i++)
-            //{
-            //    var node = link.First;
-            //    node = node.Next;
-            //    link.Remove(node);
-            //    link.AddBefore(link.First, node);
-            //}
-            //time.Stop();
-            //Console.WriteLine(time.ElapsedMilliseconds);
-
-            //time.Restart();
-            //return;
-
-
-
-
-
             var parameters = new Dictionary<String, double>();
-            parameters.Add("maxTime",500);
+            parameters.Add("maxTime",300);
             int n = 300;        //320
             double p3 = 0.01;
-            double p2 = 0.5;
+            double p2 = 0.1;
             double p1 = 0.5;
             int iterations = 1;
 
             var solvers = new List<IMinimumEdgecoveringSolver> {
                 //new RS("1"),
-                //new RS(mode: "byDegree"),
-                //new RS(mode: "byDegreeUpdating"),
-                //new RS(mode: "byDegreeUpdatingAndRegret"),  //scheint bis jetzt nicht sinnvoll
+                new RS(mode: "byDegree"),
+                new RS(mode: "byDegreeUpdating"),
+                new RS(mode: "byDegreeUpdatingAndRegret"),  //scheint bis jetzt nicht sinnvoll
                 new RS(mode: "byDegreeUpdating_V3"),
-                //new SAS(),
+                //new SAS(500),
                 //new RORTS(0,preCalculationTime:20),
                 //new RORTS(20,preCalculationTime:20),
                 //new RORTS(40,preCalculationTime:20,mode:"partialOptimal"),
                 //new RORTS(20,preCalculationTime:20, mode:"minDegree"),
                 //new RORTS(20,preCalculationTime:20,mode:"artificalThinning"),
                 //new ORTS(),
-            };
+                new OnlineSolver(OnlineSolver.GenerateFunc3(120),"test"),
+        };
 
-            //for (int i = 1; i < n/9-1; i++)
-            //{
-            //    solvers.Add(new HillClimbSolver(i * 3));
-            //}
-            //var solverTester = new SolverTester();
+            //for (int j = 1; j < 15; j++)
+            //    solvers.Add(new SAS(j*0.2, "" + j + ""));
+
+
             var data = SolverTester.RunSolvers(solvers, parameters,iterations:iterations,n:n,p1:p1,p2:p2,p3:p3);
 
             PrintData(data);
