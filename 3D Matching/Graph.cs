@@ -181,6 +181,22 @@ namespace _3D_Matching
             }
             return true;
         }
+        public int NumberOfNewCoveredVertices()
+        {
+            int i = 0;
+            foreach (var vertex in Vertices)
+                if (!vertex.IsCovered)
+                    i++;
+            return i;
+        }
+        public int NumberOfAlreadyCoveredVertices()
+        {
+            int i = 0;
+            foreach (var vertex in Vertices)
+                if (vertex.IsCovered)
+                    i++;
+            return i;
+        }
     }
     class Vertex 
     {
