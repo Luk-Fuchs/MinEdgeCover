@@ -10,15 +10,15 @@ namespace _3D_Matching.Solvers
     class OnlineSolver : IMinimumEdgecoveringSolver
     {
         Random _random = new Random();
-        private Func<int, int, int, int, int, double> _func;
-        private String _mode;
-        public OnlineSolver(Func<int, int, int, int, int, double> func, String mode)
+        //private Func<int, int, int, int, int, double> _func;
+        //private String _mode;
+        private bool _forceSingleCover;
+        public OnlineSolver(bool forceSingleCover = false)
         {
-            _func = func;
-            _mode = mode;
+            _forceSingleCover = forceSingleCover;
         }
 
-        public override String Name { get => this.GetType().Name + "|" + _mode; }
+        public override String Name { get => this.GetType().Name + "|" + _forceSingleCover; }
 
         public override (List<Edge> cover,int iterations) Run(Dictionary<string, double> parameters)
         {
@@ -62,17 +62,36 @@ namespace _3D_Matching.Solvers
                         //Console.WriteLine(1.0 / edge.VerticesIds.Select(_ => vertexDegrees[_]).Min());
                         //if (_random.NextDouble() < Math.Pow(1.0/edge.VerticesIds.Select(_ => vertexDegrees[_]).Min() * edge.NumberOfNewCoveredVertices(), (8 - walkThrough)) )
                         //Console.WriteLine((edge.NumberOfNewCoveredVertices() - 2.0) * Math.Pow((averageDegree * 3.0) / edge.Vertices.Select(_ => vertexDegrees[_.Id] /*+(_.IsCovered ?10000:0)*/).Sum(), 10));
-                        if (    _random.NextDouble()<(edge.NumberOfNewCoveredVertices()-2.0) //* Math.Pow((averageDegree * 3.0)/edge.Vertices.Select(_ => vertexDegrees[_.Id] /*+(_.IsCovered ?10000:0)*/).Sum(),3)
-                            || walkThrough > 0  && edge.NumberOfNewCoveredVertices() >=2 //&& _random.NextDouble() < Math.Pow(1.0 / edge.VerticesIds.Select(_ => vertexDegrees[_]).Min(), 2)
-                            || walkThrough > 1 && edge.NumberOfNewCoveredVertices()>0)   //&& _random.NextDouble() < 1.0 * edge.NumberOfNewCoveredVertices() / edge.VerticesIds.Select(_ => vertexDegrees[_]).Min())
+                        if (_forceSingleCover)
                         {
-                            resTmp.Add(edge);
-                            //Console.WriteLine("new covered:" + uncoveredVertexCountEdge+ "/"+edge.Vertices.Count+ "deg/avgdeg: " + edge.Vertices.Select(_=>vertexDegrees[_.Id]).Sum() +"/"+ averageDegree);
-                            uncoveredVertexCountTotal -= uncoveredVertexCountEdge;
-                            foreach (var vertex in edge.Vertices)
+                            if ((  edge.NumberOfNewCoveredVertices() ==3 //* Math.Pow((averageDegree * 3.0)/edge.Vertices.Select(_ => vertexDegrees[_.Id] /*+(_.IsCovered ?10000:0)*/).Sum(),3)
+                                || walkThrough > 0 && edge.NumberOfNewCoveredVertices() >= 2 //&& _random.NextDouble() < Math.Pow(1.0 / edge.VerticesIds.Select(_ => vertexDegrees[_]).Min(), 2)
+                                || walkThrough > 1 && edge.NumberOfNewCoveredVertices() > 0) && edge.NumberOfNewCoveredVertices()==edge.Vertices.Count)  //&& _random.NextDouble() < 1.0 * edge.NumberOfNewCoveredVertices() / edge.VerticesIds.Select(_ => vertexDegrees[_]).Min())
                             {
-                                vertex.IsCovered = true;
-                                vertex.TimesCovered = 1;
+                                resTmp.Add(edge);
+                                //Console.WriteLine("new covered:" + uncoveredVertexCountEdge+ "/"+edge.Vertices.Count+ "deg/avgdeg: " + edge.Vertices.Select(_=>vertexDegrees[_.Id]).Sum() +"/"+ averageDegree);
+                                uncoveredVertexCountTotal -= uncoveredVertexCountEdge;
+                                foreach (var vertex in edge.Vertices)
+                                {
+                                    vertex.IsCovered = true;
+                                    vertex.TimesCovered = 1;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (/*_random.NextDouble() */0< (edge.NumberOfNewCoveredVertices() - 2.0) //* Math.Pow((averageDegree * 3.0)/edge.Vertices.Select(_ => vertexDegrees[_.Id] /*+(_.IsCovered ?10000:0)*/).Sum(),3)
+                                || walkThrough > 0 && edge.NumberOfNewCoveredVertices() >= 2 //&& _random.NextDouble() < Math.Pow(1.0 / edge.VerticesIds.Select(_ => vertexDegrees[_]).Min(), 2)
+                                || walkThrough > 1 && edge.NumberOfNewCoveredVertices() > 0)   //&& _random.NextDouble() < 1.0 * edge.NumberOfNewCoveredVertices() / edge.VerticesIds.Select(_ => vertexDegrees[_]).Min())
+                            {
+                                resTmp.Add(edge);
+                                //Console.WriteLine("new covered:" + uncoveredVertexCountEdge+ "/"+edge.Vertices.Count+ "deg/avgdeg: " + edge.Vertices.Select(_=>vertexDegrees[_.Id]).Sum() +"/"+ averageDegree);
+                                uncoveredVertexCountTotal -= uncoveredVertexCountEdge;
+                                foreach (var vertex in edge.Vertices)
+                                {
+                                    vertex.IsCovered = true;
+                                    vertex.TimesCovered = 1;
+                                }
                             }
                         }
                     }
