@@ -33,7 +33,7 @@ namespace _3D_Matching.Solvers
             time.Start();
             Random _random = new Random();
             var bestRes = new List<Edge>();
-            var solver = new RS();
+            var solver = new Greedy();
             solver.initialize(_graph);
             var edgeCover = solver.Run(parameters2).cover;
             var twoSizeEdges = edgeCover.Where(_ => _.Vertices.Count == 2).ToList();

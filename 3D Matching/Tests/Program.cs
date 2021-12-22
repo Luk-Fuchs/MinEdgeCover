@@ -12,7 +12,8 @@ namespace _3D_Matching
         static void Main(string[] args)
         {
             var parameters = new Dictionary<String, double>();
-            parameters.Add("maxTime",50);
+            parameters.Add("maxTime",200);
+            parameters.Add("maxIter", 120);
             int n = 300;        //320
             double p3 = 0.01;
             double p2 = 0.1;
@@ -20,11 +21,12 @@ namespace _3D_Matching
             int iterations = 10;
 
             var solvers = new List<IMinimumEdgecoveringSolver> {
-                //new RS("1"),
-                new RS(mode: "byDegree"),
-                new RS(mode: "byDegreeUpdating"),
-                new RS(mode: "byDegreeUpdatingAndRegret"),  //scheint bis jetzt nicht sinnvoll
-                new RS(mode: "byDegreeUpdating_V3"),
+                new Greedy("byDegree"),
+                new Greedy("byNeighbourhoodSize"),
+                //new Greedy(mode: "byDegree"),
+                //new Greedy(mode: "byDegreeUpdating"),
+                //new Greedy(mode: "byDegreeUpdatingAndRegret"),  //scheint bis jetzt nicht sinnvoll
+                //new Greedy(mode: "byDegreeUpdating_V3"),
                 //new SAS(500),
                 //new RORTS(0,preCalculationTime:20),
                 //new RORTS(20,preCalculationTime:20),
@@ -32,7 +34,8 @@ namespace _3D_Matching
                 //new RORTS(20,preCalculationTime:20, mode:"minDegree"),
                 //new RORTS(20,preCalculationTime:20,mode:"artificalThinning"),
                 //new ORTS(),
-                new OnlineSolver(OnlineSolver.GenerateFunc3(120),"test"),
+                new OnlineSolver(true),
+                new OnlineSolver(false),
         };
 
             var data = SolverTester.RunSolvers(solvers, 
