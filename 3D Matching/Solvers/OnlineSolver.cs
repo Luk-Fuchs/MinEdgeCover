@@ -31,7 +31,7 @@ namespace _3D_Matching.Solvers
             var resTmp = new List<Edge>();
             var inputLength = _edges.Count;
 
-            while (time.ElapsedMilliseconds < maxTime)
+            while (time.ElapsedMilliseconds < maxTime && runTrough < parameters["maxIter"])
             {
                 var edgesInputStream = _edges.OrderBy(_ => _random.Next()).ToList();
                 var maxWalkThrough = 3;
