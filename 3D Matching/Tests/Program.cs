@@ -12,17 +12,23 @@ namespace _3D_Matching
         static void Main(string[] args)
         {
             var parameters = new Dictionary<String, double>();
-            parameters.Add("maxTime",200);
-            parameters.Add("maxIter", 120);
+            parameters.Add("maxTime",20000);
+            parameters.Add("maxIter", 10000);
             int n = 300;        //320
             double p3 = 0.01;
             double p2 = 0.1;
             double p1 = 0.5;
-            int iterations = 10;
+            int iterations = 1;
 
             var solvers = new List<IMinimumEdgecoveringSolver> {
-                new Greedy("byDegree"),
-                new Greedy("byNeighbourhoodSize"),
+                new HC(climbMode: "allNotOptimal",maxEdgeSwapSize:5),
+                new HC(maxEdgeSwapSize:5),
+                //new HC(maxEdgeSwapSize:15),
+                //new HC(maxEdgeSwapSize:20),
+                //new HC(maxEdgeSwapSize:25),
+                //new HC(maxEdgeSwapSize:30),
+                //new Greedy("byDegree"),
+                //new Greedy("byNeighbourhoodSize"),
                 //new Greedy(mode: "byDegree"),
                 //new Greedy(mode: "byDegreeUpdating"),
                 //new Greedy(mode: "byDegreeUpdatingAndRegret"),  //scheint bis jetzt nicht sinnvoll
@@ -34,13 +40,13 @@ namespace _3D_Matching
                 //new RORTS(20,preCalculationTime:20, mode:"minDegree"),
                 //new RORTS(20,preCalculationTime:20,mode:"artificalThinning"),
                 //new ORTS(),
-                new OnlineSolver(true),
-                new OnlineSolver(false),
+                //new OnlineSolver(true),
+                //new OnlineSolver(false),
         };
 
             var data = SolverTester.RunSolvers(solvers, 
                                                 parameters,
-                                                generationType: "readIn",            //"readIn", "random"
+                                                generationType: "random",            //"readIn", "random"
                                                 iterations:iterations,
                                                 n:n,p1:p1,p2:p2,p3:p3);
 
@@ -79,7 +85,7 @@ namespace _3D_Matching
             }
 
 
-            Console.WriteLine("Sollten die Daten gespeichert werden?");
+            Console.WriteLine("Sollten die Daten gespeichert werden?   y/n");
             Console.WriteLine("Pfad:  " + @"C:\Users\LFU\Desktop\Masterarbeit\Algorithm_data\test.csv");
             var shouldSave = Console.Read();
             if (shouldSave == 121)
