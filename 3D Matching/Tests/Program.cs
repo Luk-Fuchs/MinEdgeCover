@@ -12,17 +12,18 @@ namespace _3D_Matching
         static void Main(string[] args)
         {
             var parameters = new Dictionary<String, double>();
-            parameters.Add("maxTime",20000);
+            parameters.Add("maxTime",200);
             parameters.Add("maxIter", 10000);
             int n = 300;        //320
             double p3 = 0.01;
             double p2 = 0.1;
             double p1 = 0.5;
-            int iterations = 1;
+            int iterations = 10;
 
             var solvers = new List<IMinimumEdgecoveringSolver> {
-                new HC(climbMode: "allNotOptimal",maxEdgeSwapSize:5),
-                new HC(maxEdgeSwapSize:5),
+                //new HC(climbMode: "allNotOptimal",maxEdgeSwapSize:10),
+                //new HC(maxEdgeSwapSize:10),
+                new HC(climbMode: "alternatingSmallImprovements",maxEdgeSwapSize:5),
                 //new HC(maxEdgeSwapSize:15),
                 //new HC(maxEdgeSwapSize:20),
                 //new HC(maxEdgeSwapSize:25),

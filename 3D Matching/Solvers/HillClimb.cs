@@ -47,10 +47,13 @@ namespace _3D_Matching.Solvers
             solver.initialize(_graph);
             var edgeCover = solver.Run(modifiedParameters).cover;
             int runThrough = 0;
-            while(time.ElapsedMilliseconds < maxTime)
+
+
+            if (climbMode == "allNotOptimal")
             {
-                if (climbMode == "allNotOptimal")
+                while (time.ElapsedMilliseconds < maxTime)
                 {
+
                     if (maxEdgeSwapSize > edgeCover.Count - 5)
                     {
                         solver = new ORTS();
@@ -89,8 +92,12 @@ namespace _3D_Matching.Solvers
                     }
 
                 }
-                if (climbMode == "normal")
+            }
+            if (climbMode == "normal")
+            {
+                while (time.ElapsedMilliseconds < maxTime)
                 {
+
                     if (maxEdgeSwapSize > edgeCover.Count - 5)
                     {
                         solver = new ORTS();
@@ -105,7 +112,7 @@ namespace _3D_Matching.Solvers
                         break;
                     else
                         toOptimizeEdges.Add(notOptimal[_random.Next(notOptimal.Count)]);
-                    for(int i = 0; i< maxEdgeSwapSize - 1; i++)
+                    for (int i = 0; i < maxEdgeSwapSize - 1; i++)
                     {
                         var index = _random.Next(edgeCover.Count);
                         if (toOptimizeEdges.Contains(edgeCover[index]))
@@ -123,13 +130,61 @@ namespace _3D_Matching.Solvers
                     var solver2 = new ORTS();
                     solver2.initialize(tmpGraph);
                     var optimizedEdges = solver2.Run(parameters).cover;
-                        Console.WriteLine("Optimized from " + toOptimizeEdges.Count +"to"+ optimizedEdges.Count );
-                    if(optimizedEdges.Count< toOptimizeEdges.Count)
+                    Console.WriteLine("Optimized from " + toOptimizeEdges.Count + "to" + optimizedEdges.Count);
+                    if (optimizedEdges.Count < toOptimizeEdges.Count)
                     {
                         foreach (var edge in toOptimizeEdges)
                             edgeCover.Remove(edge);
                         foreach (var edge in optimizedEdges)
                             edgeCover.Add(edge);
+                    }
+
+                }
+            }
+            if (climbMode == "alternatingSmallImprovements")
+            {
+                var tmpParameters = parameters.ToDictionary(entry => entry.Key,
+                                                            entry => entry.Value);
+                tmpParameters["maxTime"] = 50;
+                var bestRes = edgeCover.ToList();
+                while (time.ElapsedMilliseconds < maxTime)
+                {
+                    runThrough++;
+                    solver = new Greedy();
+                    solver.initialize(_graph);
+                    var tmpRes = solver.Run(tmpParameters).cover;
+
+                    for (int i = 0; i< 3; i++)
+                    {
+                        var toOptimizeEdges = tmpRes.Where(_ => _.Vertices.Count < 3).ToList();
+                        if (toOptimizeEdges.Count == 0)
+                            break;
+                        for (int j = 0; j < maxEdgeSwapSize - 1; j++)
+                        {
+                            var index = _random.Next(tmpRes.Count);
+                            if (toOptimizeEdges.Contains(tmpRes[index]))
+                            {
+                                j--;
+                                continue;
+                            }
+
+                            toOptimizeEdges.Add(tmpRes[index]);
+                        }
+                        Graph tmpGraph = GenerateInducedSubgraph(toOptimizeEdges);
+                        var solver2 = new ORTS();
+                        solver2.initialize(tmpGraph);
+                        var optimizedEdges = solver2.Run(parameters).cover;
+                        if (optimizedEdges.Count < toOptimizeEdges.Count)
+                        {
+                            foreach (var edge in toOptimizeEdges)
+                                tmpRes.Remove(edge);
+                            foreach (var edge in optimizedEdges)
+                                tmpRes.Add(edge);
+                        }
+                    }
+                    if(tmpRes.Count< edgeCover.Count)
+                    {
+                        edgeCover = tmpRes.ToList();
                     }
 
                 }
