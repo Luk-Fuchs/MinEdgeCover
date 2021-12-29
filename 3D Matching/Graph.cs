@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace _3D_Matching
 {
-    class Graph
+    public class Graph
     {
+        bool _adjEdgesAreInitialized = false;
         public Graph(List<Edge> edges, List<Vertex> vertices)
         {
             _edges = edges;
@@ -93,7 +94,6 @@ namespace _3D_Matching
             return graph;
         }
 
-
         public static Graph BuildGraphFromCSV(String path)
         { 
             string[] inputLines = System.IO.File.ReadAllLines(path);
@@ -133,15 +133,29 @@ namespace _3D_Matching
             return graph;
         }
 
+        public void SetVertexAdjEdges()
+        {
+            if (_adjEdgesAreInitialized)
+                return;
+            _adjEdgesAreInitialized = true;
+            foreach (var vertex in Vertices)
+                vertex.AdjEdges = new List<Edge>();
+            foreach (var edge in _edges)
+                foreach (var vertex in edge.Vertices)
+                    vertex.AdjEdges.Add(edge);
+        }
 
     }
 
-    class Edge
+    public class Edge
     {
         public List<Vertex> Vertices;
         public List<int> VerticesIds;
         public bool IsInCover = false;
         public double property1;
+        public Vertex plusVertex;
+        public Edge linkingEdge;
+        public int treeIndex;
         public Edge(List<Vertex> vertices)
         {
             Vertices = vertices;
@@ -198,13 +212,16 @@ namespace _3D_Matching
             return i;
         }
     }
-    class Vertex 
+    public class Vertex 
     {
         public bool IsCovered = false;
         public int TimesCovered = 0;
         public int[] Interval;
         public double hardness = 0.0;  //high if several attempts, matching this vertex failtured
+        public Edge coveredBy;
         public Dictionary<int, int> NeighbourhoodAndMultiplicity;
+        public List<Edge> AdjEdges = null;
+        public int treeIndex = -1;
         public Vertex(int id)
         {
             this.Id = id;
