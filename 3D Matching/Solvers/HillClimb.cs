@@ -159,10 +159,10 @@ namespace _3D_Matching.Solvers
                         var toOptimizeEdges = tmpRes.Where(_ => _.Vertices.Count < 3).ToList();
                         if (toOptimizeEdges.Count == 0)
                             break;
-                        for (int j = 0; j < maxEdgeSwapSize - 1; j++)
+                        for (int j = 0; j < Math.Min(maxEdgeSwapSize - 1,(double)(tmpRes.Count-toOptimizeEdges.Count)/2); j++)
                         {
                             var index = _random.Next(tmpRes.Count);
-                            if (toOptimizeEdges.Contains(tmpRes[index]))
+                            if (toOptimizeEdges.Contains(tmpRes[index]))        //time inefficent if toOptimize is large
                             {
                                 j--;
                                 continue;
