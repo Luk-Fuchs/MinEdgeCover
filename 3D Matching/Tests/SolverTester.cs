@@ -24,7 +24,8 @@ namespace _3D_Matching.Tests
             var graphs = new List<Graph>();
             if(generationType == "readIn")
             {
-                String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\TestData";
+                String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\TestDaten2";
+                //String path = @"C:\Users\LFU\Desktop\Masterarbeit\UnitTestDaten";
                 string[] filePaths = Directory.GetFiles(path);
                 graphs = Enumerable.Range(0, Math.Min((int)iterations, filePaths.Length)).Select(_ => (Graph.BuildGraphFromCSV(filePaths[_]))).ToList();
                 iterations = graphs.Count();
@@ -41,16 +42,25 @@ namespace _3D_Matching.Tests
                 var solver = solvers[i];
                 Console.WriteLine(solver.Name);
                 int totalEdgeCount = 0;
-                time.Restart();
+                time.Reset();
+                var edgeSizes = new int[3];
                 for (int j = 0; j < iterations; j++)
                 {
                     var graph = graphs[j];
+
+                    time.Start();
                     solver.initialize(graph);
                     (var edgeCover, double used_iterations)= solver.Run(parameter);
+                    time.Stop();
+
                     totalEdgeCount += edgeCover.Count;
                     totalIterations += used_iterations;
                     if (!IsCover(graph, edgeCover).Item1)
                         Console.WriteLine(IsCover(graph, edgeCover).Item2 + "multipleCovers");
+                    for(int size = 1; size < 4; size++)
+                    {
+                        edgeSizes[size - 1] += edgeCover.Where(_ => _.Vertices.Count == size).Count();
+                    }
                     //throw new System.Exception("no real cover  " + IsCover(graph, edgeCover).Item2);
                     multipleTimesCoveredVertices += IsCover(graph, edgeCover).Item2;
                 }
@@ -60,6 +70,7 @@ namespace _3D_Matching.Tests
                 resData[i, (int)TestAttribute.Edges] = totalEdgeCount / iterations + "";
                 resData[i, (int)TestAttribute.Iter] = totalIterations / iterations + "";
                 resData[i, (int)TestAttribute.MultCov] = multipleTimesCoveredVertices / iterations + "";
+                resData[i, (int)TestAttribute.CoverComp] = edgeSizes[0] / iterations + "|"+ edgeSizes[1] / iterations + "|"+ edgeSizes[2] / iterations + "|";
             }
 
             return resData;
@@ -98,7 +109,7 @@ namespace _3D_Matching.Tests
         Edges,
         Iter,
         MultCov,
-
+        CoverComp,
 
 
         Length, //must be last
