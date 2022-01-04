@@ -37,31 +37,12 @@ namespace _3D_Matching.Solvers
                 var maxWalkThrough = 3;
                 for (int walkThrough = 0; walkThrough < maxWalkThrough; walkThrough++)
                 {
-                    //Console.WriteLine("walkThrough: " + walkThrough);
 
                     var uncoveredVertexCountTotal = _graph.Vertices.Count;
-                    //var vertexDegrees = new int[_graph.Vertices.Count];
-                    //for (int j = 0; j < _edges.Count; j++)
-                    //{
-                    //    foreach (var vertexId in _edges[j].VerticesIds)
-                    //        vertexDegrees[vertexId]++;
-                    //}
                     for (int i = 0; i < inputLength; i++)
                     {
                         var edge = edgesInputStream[i];
                         var uncoveredVertexCountEdge = edge.NumberOfNewCoveredVertices();
-                        //if (_random.NextDouble() < _func(i, inputLength, uncoveredVertexCountEdge, _graph.Vertices.Count, uncoveredVertexCountTotal))// edge.NumberOfAlreadyCoveredVertices())
-
-                        //int averageDegree = vertexDegrees.Sum() / vertexDegrees.Length;
-                        //var zähler = (uncoveredVertexCountEdge * uncoveredVertexCountEdge * uncoveredVertexCountEdge * i);
-                        //var nenner = (30 * inputLength * (edge.VerticesIds.Select(_ => vertexDegrees[_]).Sum()));
-                        //double exponent = (double)zähler / nenner;
-                        //var prob = Math.Exp(exponent) / 3;
-                        //Console.WriteLine(zähler +"/" +nenner+"    " +exponent +"  "+prob);
-                        //if (_random.NextDouble() < prob)
-                        //Console.WriteLine(1.0 / edge.VerticesIds.Select(_ => vertexDegrees[_]).Min());
-                        //if (_random.NextDouble() < Math.Pow(1.0/edge.VerticesIds.Select(_ => vertexDegrees[_]).Min() * edge.NumberOfNewCoveredVertices(), (8 - walkThrough)) )
-                        //Console.WriteLine((edge.NumberOfNewCoveredVertices() - 2.0) * Math.Pow((averageDegree * 3.0) / edge.Vertices.Select(_ => vertexDegrees[_.Id] /*+(_.IsCovered ?10000:0)*/).Sum(), 10));
                         if (_forceSingleCover)
                         {
                             if ((  edge.NumberOfNewCoveredVertices() ==3 //* Math.Pow((averageDegree * 3.0)/edge.Vertices.Select(_ => vertexDegrees[_.Id] /*+(_.IsCovered ?10000:0)*/).Sum(),3)
@@ -96,9 +77,6 @@ namespace _3D_Matching.Solvers
                         }
                     }
                 }
-                //Console.WriteLine("uncovered:" + _graph.Vertices.Where(_ => !_.IsCovered).Count());
-                //if (_graph.Vertices.Where(_ => !_.IsCovered).Count() > 0)
-                //    resTmp = _graph.Edges.ToList();
                 foreach (var edge in _graph.Edges)
                     if (edge.NumberOfNewCoveredVertices() > 0)
                     {
