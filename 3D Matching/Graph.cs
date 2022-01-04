@@ -110,7 +110,7 @@ namespace _3D_Matching
                 var newVertex = new Vertex(vertexId);
                 newVertex.Interval = activeLine.Split(";")[3].Split(" - ").Select(_ => Int32.Parse(_)).ToArray();
                 vertices.Add(newVertex);
-                if(activeLine.Split(";")[1]=="True")
+                if (activeLine.Split(";")[1] == "True")
                     edges.Add(new Edge(new List<Vertex> { newVertex }));
             }
             
@@ -144,7 +144,34 @@ namespace _3D_Matching
                 foreach (var vertex in edge.Vertices)
                     vertex.AdjEdges.Add(edge);
         }
+        public void ResetVertexAdjEdges()
+        {
+            _adjEdgesAreInitialized = true;
+            foreach (var vertex in Vertices)
+                vertex.AdjEdges = new List<Edge>();
+            foreach (var edge in _edges)
+                foreach (var vertex in edge.Vertices)
+                    vertex.AdjEdges.Add(edge);
+        }
 
+        public (int amount, int time) CalculatePeakTime()
+        {
+            var potentialPeakTimes = Vertices.SelectMany(_ => _.Interval).Distinct().OrderBy(_ => _).ToList();
+            var count = new int[potentialPeakTimes.Count];
+            foreach (var vertex in Vertices)
+            {
+                for(int i = 0; i < count.Length; i++)
+                {
+                    if (potentialPeakTimes[i] < vertex.Interval[0])
+                        continue;
+                    if (potentialPeakTimes[i] > vertex.Interval[1])
+                        break;
+                    count[i]++;
+                }
+            }
+            var max = count.Max();
+            return (max, potentialPeakTimes[Array.IndexOf(count, max)]);
+        }
     }
 
     public class Edge
@@ -211,6 +238,16 @@ namespace _3D_Matching
                     i++;
             return i;
         }
+
+        internal bool ContainsTime(int time)
+        {
+            foreach(var vertex in Vertices)
+            {
+                if (vertex.ContainsTime(time))
+                    return true;
+            }
+            return false;
+        }
     }
     public class Vertex 
     {
@@ -235,6 +272,11 @@ namespace _3D_Matching
         public override string ToString()
         {
             return Id +"";
+        }
+
+        internal bool ContainsTime(int time)
+        {
+            return Interval[0] <= time && Interval[1] >= time;
         }
     }
 }
