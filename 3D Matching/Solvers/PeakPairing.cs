@@ -44,7 +44,7 @@ namespace _3D_Matching.Solvers
                                         .Concat(_edges.Where(_ => _.Vertices.Count == 3).Select(_ => new Edge(new List<Vertex> { _.Vertices[0], _.Vertices[2] })))
                                         .Concat(_edges.Where(_ => _.Vertices.Count == 3).Select(_ => new Edge(new List<Vertex> { _.Vertices[1], _.Vertices[2] })));
             var helpGraph = new Graph(/*_edges*/erweitereKanten.Where(_=>_.Vertices.Count==2  && ((firstPeakVertices.Contains(_.Vertices[0]) && secondPeakVertices.Contains(_.Vertices[1]))
-                                                                              || (firstPeakVertices.Contains(_.Vertices[0]) && secondPeakVertices.Contains(_.Vertices[1]))))
+                                                                              || (firstPeakVertices.Contains(_.Vertices[1]) && secondPeakVertices.Contains(_.Vertices[0]))))
                                                                                .Concat(firstPeakVertices.Select(_=>new Edge(new List<Vertex> {_})))
                                                                                .Concat(secondPeakVertices.Select(_=>new Edge(new List<Vertex> {_})))
                                                                                .ToList(),
@@ -71,7 +71,7 @@ namespace _3D_Matching.Solvers
             var tmpSolver = new ORTS();
 
             var testIsttmpEdgesVollständig = new List<Edge>();
-            foreach(var edge2 in helpGraph.Edges.Where(_=>_.Vertices.Count==2))//peakMatching.cover.Where(_=>_.Vertices.Count==2))
+            foreach(var edge2 in /*helpGraph.Edges.Where(_=>_.Vertices.Count==2))*/peakMatching.cover.Where(_=>_.Vertices.Count==2))
                 foreach (var edge3 in _edges)
                 {
                     if (edge3.Vertices.Count != 3)
