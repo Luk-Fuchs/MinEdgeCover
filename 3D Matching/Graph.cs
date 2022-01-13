@@ -94,7 +94,7 @@ namespace _3D_Matching
             return graph;
         }
 
-        public static Graph BuildGraphFromCSV(String path)
+        public static Graph BuildGraphFromCSV(String path, bool allowAllAsSingle = false, bool removeDegreeOne = false)
         { 
             string[] inputLines = System.IO.File.ReadAllLines(path);
 
@@ -110,7 +110,7 @@ namespace _3D_Matching
                 var newVertex = new Vertex(vertexId);
                 newVertex.Interval = activeLine.Split(";")[3].Split(" - ").Select(_ => Int32.Parse(_)).ToArray();
                 vertices.Add(newVertex);
-                if (activeLine.Split(";")[1] == "True")
+                if (activeLine.Split(";")[1] == "True" || allowAllAsSingle)
                     edges.Add(new Edge(new List<Vertex> { newVertex }));
             }
             
@@ -130,6 +130,35 @@ namespace _3D_Matching
             //}
 
             var graph = new Graph(edges, vertices);
+
+            if (removeDegreeOne)
+            {
+                graph.SetVertexAdjEdges();
+                int i = 0;
+                while (i < vertices.Count)
+                {
+                    if (vertices[i].AdjEdges.Count == 1 && vertices[i].AdjEdges[0].Vertices.Count==1)
+                    {
+                        foreach(var vertex in vertices)
+                        {
+                            if(vertex.Id> vertices[i].Id)
+                            {
+                                vertex.Id--;
+                            }
+                        }
+                        edges.Remove(vertices[i].AdjEdges[0]);
+                        vertices.RemoveAt(i);
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                }
+                foreach(var edge in edges)
+                {
+                    edge.VerticesIds = edge.Vertices.Select(_ => _.Id).ToList();
+                }
+            }
             return graph;
         }
 
@@ -154,11 +183,13 @@ namespace _3D_Matching
                     vertex.AdjEdges.Add(edge);
         }
 
-        public (int amount, int time) CalculatePeakTime()
+        public (int amount, int time) CalculatePeakTime(List<Vertex> vertices = null)
         {
-            var potentialPeakTimes = Vertices.SelectMany(_ => _.Interval).Distinct().OrderBy(_ => _).ToList();
+            if (vertices == null)
+                vertices = Vertices;
+            var potentialPeakTimes = vertices.SelectMany(_ => _.Interval).Distinct().OrderBy(_ => _).ToList();
             var count = new int[potentialPeakTimes.Count];
-            foreach (var vertex in Vertices)
+            foreach (var vertex in vertices)
             {
                 for(int i = 0; i < count.Length; i++)
                 {
@@ -171,6 +202,22 @@ namespace _3D_Matching
             }
             var max = count.Max();
             return (max, potentialPeakTimes[Array.IndexOf(count, max)]);
+        }
+
+        public Graph GenerateInducedSubgraph(List<Edge> toOptimizeEdges)
+        {
+            var tmpVertices = toOptimizeEdges.SelectMany(_ => _.Vertices);
+            //Maybe remove duplicate
+            var tmpEdges = Edges.Where(_ => _.Vertices.Where(x => tmpVertices.Contains(x)).Count() == _.Vertices.Count).ToList();
+            var tmpGraph = new Graph(tmpEdges, tmpVertices.ToList());
+            return tmpGraph;
+        }
+        public Graph GenerateInducedSubgraph(List<Vertex> inducedVertices)
+        {
+            //Maybe remove duplicate
+            var tmpEdges = Edges.Where(_ => _.Vertices.Where(x => inducedVertices.Contains(x)).Count() == _.Vertices.Count).ToList();
+            var tmpGraph = new Graph(tmpEdges, inducedVertices.ToList());
+            return tmpGraph;
         }
     }
 
