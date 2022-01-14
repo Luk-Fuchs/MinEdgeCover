@@ -3,7 +3,9 @@ using _3D_Matching.Tests;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+
 
 namespace _3D_Matching
 {
@@ -13,71 +15,98 @@ namespace _3D_Matching
         {
 
             var parameters = new Dictionary<String, double>();
-            parameters.Add("maxTime", 2000);
-            parameters.Add("maxIter", 10000);
+            parameters.Add("maxTime", 700);
+            parameters.Add("maxIter", 300);
             int n = 300;        //320
             double p3 = 0.01;
             double p2 = 0.1;
             double p1 = 0.5;
-            int iterations = 1;
-
-
-            //var graph = Graph.BuildGraphFromCSV(@"C:\Users\LFU\Desktop\Masterarbeit\UnitTestDaten");
-            //var solver = new Solvers.Constructive();
-            //solver.initialize(graph);
-            //var res = solver.Run(parameters);
+            int iterations = 10;
+            int skip = 0;
 
 
 
 
 
             var solvers = new List<IMinimumEdgecoveringSolver> {
-                //new BAB(),
-                //new Genetic("fast"),
-                //new Genetic("normal"),
-                //new Genetic("test"),
-                //new Genetic("linkedList"),
-                //new Constructive(),
+
+                //-----------------TEST SECTION------------------
+
+
+
+
+
+
+
+                //--------------------WORKS OK----------------
+                //new Genetic(precalc: true),
+                //new Genetic(precalc: false),
+                //new Greedy(mode: "byDegreeUpdating_V3"),
+                //new RORTS(30 , mode: "withoutHighDegreeVertices"),
+
+
+                //-------------------WORKS BAD (TIME)--------------------
+                //new TwoDBased(type: "2DContractTest", newCalc:20, randomContract: false),
+                //new TwoDBased(type: "2DContractTest", newCalc:20, randomContract: true),
                 //new HC(climbMode: "allNotOptimal",maxEdgeSwapSize:7),
                 //new HC(maxEdgeSwapSize:10),
                 //new HC(climbMode: "alternatingSmallImprovements",maxEdgeSwapSize:5),
-                //new HC(maxEdgeSwapSize:15),
                 //new HC(maxEdgeSwapSize:20),
-                //new HC(climbMode: "alternatingPaths"),
                 //new HC(maxEdgeSwapSize:25),
                 //new HC(maxEdgeSwapSize:30),
-                new Greedy("byDegree"),
-                new Greedy(mode: "byDegreeUpdatingAndMinSumSorting", sizeWeight: 4, variation: 1),
-                new Greedy(mode: "byDegreeUpdatingAndMinSumSorting", sizeWeight: 4, variation: 2),
-                new Greedy(mode: "byDegreeUpdatingAndMinSumSorting", sizeWeight: 5, variation: 1),
-                new Greedy(mode: "byDegreeUpdatingAndMinSumSorting", sizeWeight: 5, variation: 2),
                 //new Greedy(mode: "byNeighbourhoodSize"),
-                //new Greedy(mode: "bydegree"),
                 //new Greedy(mode: "byDegreeUpdating"),
-                //new Greedy(mode: "byDegreeUpdatingAndRegret"),  //scheint bis jetzt nicht sinnvoll
-                //new Greedy(mode: "byDegreeUpdating_V3"),
-                //new SAS(500),
+
+                //-------------------WORKS BAD (SIZE)--------------------
+                //new BAB(),
+                //new Greedy("byDegree"),
+                //new Greedy(mode: "byDegreeUpdatingAndMinSumSorting", sizeWeight: 4, variation: 2),
+
+
+                //-----------DOESNT WORK YET (NO REAL MATCHING)----------
+                //new TwoDBased(type: "noAugmentation"),
+                //new TwoDBased(type: "randomSplitAndAugmentOnceByOnce"),
+                //new PeakPairing(),
+                //new Constructive(),
                 //new RORTS(0,preCalculationTime:20),
                 //new RORTS(10,preCalculationTime:20),
                 //new RORTS(5,preCalculationTime:20,mode:"partialOptimal"),
-                //new RORTS(5,preCalculationTime:20, mode:"minDegree"),
                 //new RORTS(20,preCalculationTime:20,mode:"artificalThinning"),
-                new ORTS(),
                 //new OnlineSolver(true),
                 //new OnlineSolver(false),
-        };
+                //new OnlineSolver(true,criterion: "firstTimePeak"),
+                //new OnlineSolver(true,criterion: "firstTimeByDeg"),
+                //new HC(maxEdgeSwapSize:15),
+                //new HC(climbMode: "alternatingPaths"),
+                //new SAS(500),
+                //new RORTS(5,preCalculationTime:20, mode:"minDegree"),
 
-            //for (int i = 0; i < 10; i++)
-            //    for (int j = 0; j < 10; j++)
-            //        solvers.Add(new Greedy(mode: "byDegreeUpdatingAndMinSumSorting", sizeWeight: i, variation: j));
 
-            var data = SolverTester.RunSolvers(solvers, 
+
+
+
+
+
+                new ORTS(),
+            };
+
+            //for (int i = 0; i < 80; i++)
+            //    solvers.Add(new TwoDBased(type: "2DContractTest", newCalc: i));
+            //for (int i = 5; i < 350; i++)
+            //    solvers.Add(new RORTS(0, mode: "partialOptimalOnInducesSubgraphs", subgaphSize: i));
+
+            var data = SolverTester.RunSolvers(solvers,
                                                 parameters,
                                                 generationType: "readIn",            //"readIn", "random"
-                                                iterations:iterations,
-                                                n:n,p1:p1,p2:p2,p3:p3);
+                                                skip: skip,
+                                                allowAllAsSingle: true,
+                                                removeDegreeOne: true,
+                                                iterations: iterations,
+                                                n: n, p1: p1, p2: p2, p3: p3);
 
             PrintData(data);
+
+
 
         }
 
