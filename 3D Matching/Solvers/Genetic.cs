@@ -25,8 +25,8 @@ namespace _3D_Matching.Solvers
         {
             double maxTime = parameters["maxTime"];
             var time = new Stopwatch();
-            time.Start();
             var res = new List<Edge>();
+            time.Start();
 
             var bestResCount = int.MaxValue;
             var vertexCount = _graph.Vertices.Count;
@@ -41,10 +41,10 @@ namespace _3D_Matching.Solvers
                 var _precalcSolver = new Greedy();
                 _precalcSolver.initialize(_graph);
                 var tmpParams = new Dictionary<String, double>();
-                tmpParams.Add("maxIter", 10);
-                tmpParams.Add("maxTime", 25);
+                tmpParams.Add("maxIter", 1000);
+                tmpParams.Add("maxTime", 80);
                 var preRes = _precalcSolver.Run(tmpParams);
-                edges = preRes.cover.Concat(_edges.Where(_ => !preRes.cover.Contains(_))).Select(_ => _.VerticesIds).ToList();
+                edges = preRes.cover.Where(_=>_.Vertices.Count!=1).Concat(_edges.Where(_ => !preRes.cover.Contains(_) && _.Vertices.Count!=1)).Concat(_edges.Where(_=>_.Vertices.Count==1)).Select(_ => _.VerticesIds).ToList();
                 bestResCount = preRes.cover.Count;
             }
             else
