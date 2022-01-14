@@ -24,13 +24,22 @@ if dict["plottype"]=="bar":
     plt.bar(x,y)
 else:
     plt.plot(x,y)
+for horizontal in dict["horizontal"].split("|"):
+    if horizontal=="":
+        break
+    horizontal = float(horizontal)
+    plt.plot([min(x),max(x)],[horizontal,horizontal],"r--")
+for vertical in dict["vertical"].split("|"):
+    if vertical=="":
+        break
+    vertical = float(vertical)
+    plt.plot([vertical,vertical],[min(y),max(y)],"r--")
 plt.title(dict["title"])
 plt.xlabel(dict["xLabel"])
 plt.ylabel(dict["yLabel"])
 plt.savefig("C:/Users/LFU/Desktop/tmp/fig" + str(time.time()) + ".pdf", dpi=fig.dpi)
-if dict["show"]=="true":
+if dict["show"]=="True":
     plt.show()
-print(dict)
 #x = f.readline()
 #y = f.readline()
 #x = f.readline()

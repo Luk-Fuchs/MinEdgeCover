@@ -10,7 +10,7 @@ namespace _3D_Matching.Tests
 {
     class Plot
     {
-        public static void CreateFigure( IEnumerable<double> yValue, IEnumerable<double> xValue = null, String title ="", String xLable ="", String yLable ="", String plottype = "bar", bool show = true)
+        public static void CreateFigure( IEnumerable<double> yValue, IEnumerable<double> xValue = null, String title ="", String xLable ="", String yLable ="", String plottype = "bar", bool show = true, String horizontal = "", String vertical="")
         {
             var csvDataString = "";
             csvDataString += (xValue == null ? String.Join(",", Enumerable.Range(0, yValue.Count())) : String.Join(",", yValue)) + ";";
@@ -23,6 +23,8 @@ namespace _3D_Matching.Tests
             csvParameterString += "xLabel," + xLable + ";";
             csvParameterString += "yLabel," + yLable + ";";
             csvParameterString += "show," + show + ";";
+            csvParameterString += "horizontal," + horizontal + ";";
+            csvParameterString += "vertical," + vertical + ";";
             csvParameterString += "plottype," + plottype ;
             System.IO.File.WriteAllText(@"C:\Users\LFU\Desktop\tmp\parameters.csv", csvParameterString);
             RunPythonSkript();
