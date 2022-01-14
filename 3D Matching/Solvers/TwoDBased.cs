@@ -12,11 +12,11 @@ namespace _3D_Matching.Solvers
         Random _random = new Random();
         String _type = "";
         int _newCalc = 10;
-        private bool _precalc;
-        public TwoDBased(String type = "splitAndAugment", bool precalc = true, int newCalc = 10)
+        private bool _randomContract;
+        public TwoDBased(String type = "splitAndAugment", bool randomContract = true, int newCalc = 10)
         {
             _type = type;
-            _precalc = precalc;
+            _randomContract = randomContract;
             _newCalc = newCalc;
         }
 
@@ -188,7 +188,7 @@ namespace _3D_Matching.Solvers
                         int a = 0;
                         int b = 1;
                         int c = 2;
-                        if (_precalc)
+                        if (_randomContract)
                         {
                         a = _random.Next(3);
                         b = (_random.Next(1,3) + a) % 3;
