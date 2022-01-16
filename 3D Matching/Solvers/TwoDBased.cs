@@ -228,7 +228,7 @@ namespace _3D_Matching.Solvers
                     res = tmpSolver.Run(parameters).cover;
 
                     Console.WriteLine(res.Count);
-                    if (res.Count < bestRes.Count)
+                    if (res.Count <= bestRes.Count)
                     {
                         bestRes = res.ToList();
                     }
