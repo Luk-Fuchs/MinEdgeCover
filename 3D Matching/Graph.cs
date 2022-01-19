@@ -163,6 +163,21 @@ namespace _3D_Matching
             return graph;
         }
 
+        public static Graph BuildGraphString(String vertexCountAndEdges)
+        {
+            var split = vertexCountAndEdges.Split(";");
+            var vertexCount = Int32.Parse(split[0]);
+            var vertices = Enumerable.Range(0, vertexCount).Select(_=>new Vertex(_)).ToList();
+            var edges = new List<Edge>();
+            for(int i = 1; i < split.Length; i++)
+            {
+                var edgeVertices = split[i].Split("->").Select(_ => Int32.Parse(_)).Select(_=>vertices[_]).ToList();
+                edges.Add(new Edge(edgeVertices));
+            }
+            var graph = new Graph(edges,vertices);
+            return graph;
+        }
+
         public void SetVertexAdjEdges()
         {
             if (_adjEdgesAreInitialized)
@@ -375,6 +390,10 @@ namespace _3D_Matching
                         }
                     }
 
+                }
+                if (!augmentationHasBeenPerformed)
+                {
+                    ResetTree(plusTreeVertices);
                 }
             }
             var resMatching = new List<Edge>();
