@@ -12,17 +12,18 @@ namespace _3D_MatchingTests
         [TestMethod]
         public void Use3DEdge()
         {
-            var graphString = "5;1->2->4;0->1;1->2;2->3;0->3";
+            var graphString = "5;1->2;1->2->4;0->1;2->3;0->3";
             var graph = Graph.BuildGraphString(graphString);
             var contractingEdges = new List<Edge> {graph.Edges[0] };
-            graph.InitializeFor2DMatchin(contractingEdges);
+            graph.InitializeFor2DMatchin(contractingEdges: contractingEdges);
             var matchingInfo = graph.GetMaximum2DMatching();
 
             Assert.AreEqual(2, matchingInfo.maxMmatching.Count);
         }
+        [TestMethod]
         public void DontUse3DEdge()
         {
-            var graphString = "5;1->2->4;0->1;1->2;2->3;0->3;4->5";
+            var graphString = "6;1->2;1->2->4;0->1;2->3;0->3;4->5";
             var graph = Graph.BuildGraphString(graphString);
             var contractingEdges = new List<Edge> { graph.Edges[0] };
             graph.InitializeFor2DMatchin(contractingEdges);

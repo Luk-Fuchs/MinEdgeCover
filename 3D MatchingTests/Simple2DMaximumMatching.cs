@@ -18,5 +18,15 @@ namespace _3D_MatchingTests
 
             Assert.AreEqual(2, matchingInfo.maxMmatching.Count);
         }
+        [TestMethod]
+        public void TreeGetsResettetCorrectly()
+        {
+            var graphString = "5;0->1;0->2;0->3;0->4;1->2";
+            var graph = Graph.BuildGraphString(graphString);
+            graph.InitializeFor2DMatchin();
+            var matchingInfo = graph.GetMaximum2DMatching();
+
+            Assert.AreEqual(2, matchingInfo.maxMmatching.Count);
+        }
     }
 }
