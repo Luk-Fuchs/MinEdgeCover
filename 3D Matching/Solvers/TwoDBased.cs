@@ -1,4 +1,5 @@
-﻿using System;
+﻿using _3D_Matching.Tests;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -28,19 +29,13 @@ namespace _3D_Matching.Solvers
             double maxIter = parameters["maxIter"];
             var time = new Stopwatch();
             time.Start();
-            //var res = new List<Edge>();
             _graph.SetVertexAdjEdges();
             var iteration = 0;
             var tmpSolver = new ORTS();
 
-            var tmpGraph = new Graph(_edges.Where(_ => _.Vertices.Count != 3).ToList(), _graph.Vertices);
-            tmpSolver.initialize(tmpGraph);
-            var res = tmpSolver.Run(parameters).cover;
-            foreach (var edge in res)
-                foreach (var vertex in edge.Vertices)
-                    vertex.coveredBy = edge;
-
-
+            _graph.InitializeFor2DMatchin();
+            var res = _graph.GetMaximum2DMatching().maxMmatching;
+            var valuePerIteration = new List<double>();
             if (_type == "splitAndAugment")
             {
 
@@ -162,18 +157,18 @@ namespace _3D_Matching.Solvers
 
                 res = bestRes;
             }
-            else if (_type == "2DContractTest")
+            else if (_type == "2DContractWithBlossom")
             {
-                var initialRes = res.ToList();
+                _graph.InitializeFor2DMatchin();
+                res = _graph.GetMaximum2DMatching().maxMmatching;
                 var bestRes = res.ToList();
-                //Console.WriteLine(res.Count + "------------");
 
-                while (time.ElapsedMilliseconds < maxTime && iteration<maxIter)
+                while (time.ElapsedMilliseconds < maxTime && iteration < maxIter)
                 {
                     iteration++;
 
                     var contractedEdges = new List<Edge>();
-                    for (int i = 0; i< _newCalc; i++)
+                    for (int i = 0; i < _newCalc; i++)
                     {
                         var edge = res[_random.Next(res.Count)];
                         if (edge.Vertices.Count != 2)
@@ -190,44 +185,35 @@ namespace _3D_Matching.Solvers
                         int c = 2;
                         if (_randomContract)
                         {
-                        a = _random.Next(3);
-                        b = (_random.Next(1,3) + a) % 3;
-                        c = 3 - a - b;
+                            a = _random.Next(3);
+                            b = (_random.Next(1, 3) + a) % 3;
+                            c = 3 - a - b;
                         }
 
-                        if (_edges.Contains(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[b] })))
+                        if (edge3.Vertices[0].AdjEdges.Contains(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[b] })))
                         {
                             contractedEdges.Add(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[b] }));
                             continue;
                         }
-                        if (_edges.Contains(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[c] })))
+                        if (edge3.Vertices[0].AdjEdges.Contains(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[c] })))
                         {
                             contractedEdges.Add(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[c] }));
                             continue;
                         }
-                        if (_edges.Contains(new Edge(new List<Vertex> { edge3.Vertices[c], edge3.Vertices[b] })))
+                        if (edge3.Vertices[0].AdjEdges.Contains(new Edge(new List<Vertex> { edge3.Vertices[c], edge3.Vertices[b] })))
                         {
                             contractedEdges.Add(new Edge(new List<Vertex> { edge3.Vertices[c], edge3.Vertices[b] }));
                             continue;
                         }
 
                     }
-                    var contracteVertices = contractedEdges.SelectMany(_ => _.Vertices).ToList();
+                    _graph.InitializeFor2DMatchin(contractingEdges: contractedEdges);
+                    res = _graph.GetMaximum2DMatching().maxMmatching;
 
-                    var restrictedEdges = _edges.Where(_=>_.Vertices.Count<3).Where(_ => _.Vertices.All(x => !contracteVertices.Contains(x))).ToList();
-                    foreach(var edge in contractedEdges)
-                    {
-                        foreach(var newAddableEdge in edge.Vertices[0].AdjEdges)
-                        {
-                            if (edge.Vertices.All(_ => newAddableEdge.Vertices.Contains(_)))
-                                restrictedEdges.Add(newAddableEdge);
-                        }
-                    }
-
-                    tmpSolver.initialize(new Graph(restrictedEdges, _graph.Vertices));
-                    res = tmpSolver.Run(parameters).cover;
-
-                    Console.WriteLine(res.Count);
+                    valuePerIteration.Add(res.Count + 0.0);
+                    
+                    
+                    
                     if (res.Count <= bestRes.Count)
                     {
                         bestRes = res.ToList();
@@ -238,6 +224,11 @@ namespace _3D_Matching.Solvers
                     }
                 }
                 res = bestRes;
+
+                var MIP = new ORTS();
+                MIP.initialize(_graph);
+                var bound = MIP.Run(parameters).cover.Count;
+                Plot.CreateFigure(valuePerIteration,plottype:"f", xLable: "Iterations", yLable: "Matching Size", title: "2DBased history of size ( ca 300 iterations/second",horizontal:""+bound, show:false);
             }
 
 
