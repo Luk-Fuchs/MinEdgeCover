@@ -31,14 +31,15 @@ namespace _3D_Matching.Solvers
             time.Start();
             _graph.SetVertexAdjEdges();
             var iteration = 0;
-            var tmpSolver = new ORTS();
+            //var tmpSolver = new ORTS();
 
             _graph.InitializeFor2DMatchin();
-            var res = _graph.GetMaximum2DMatching().maxMmatching;
+            List<Edge> res = new List<Edge>();
             var valuePerIteration = new List<double>();
             if (_type == "splitAndAugment")
             {
 
+                res = _graph.GetMaximum2DMatching().maxMmatching;
                 foreach (var toSplitEdge in res.Where(_ => _.Vertices.Count == 2))
                 {
                     var vertex1 = toSplitEdge.Vertices[0];
@@ -92,6 +93,7 @@ namespace _3D_Matching.Solvers
             }
             else if (_type == "randomSplitAndAugmentOnceByOnce")
             {
+                res = _graph.GetMaximum2DMatching().maxMmatching;
                 var initialRes = res.ToList();
                 var bestRes = res.ToList();
                 //Console.WriteLine(res.Count + "------------");
@@ -168,14 +170,31 @@ namespace _3D_Matching.Solvers
                     iteration++;
 
                     var contractedEdges = new List<Edge>();
-                    for (int i = 0; i < _newCalc; i++)
+                    if (iteration == 0) //maybe use here a better massure for the number of 3D edges, the 2Deges lie in
                     {
-                        var edge = res[_random.Next(res.Count)];
-                        if (edge.Vertices.Count != 2)
-                            continue;
-                        res.Remove(edge);
-                        contractedEdges.Add(edge);
-
+                        var sortedRes = res.OrderBy(_ => -_.Vertices.Min(x => x.AdjEdges.Count)).ToList();
+                        for (int i = 0; i < _newCalc; i++)
+                        {
+                            var edge = sortedRes[i];
+                            if (edge.Vertices.Count != 2)
+                                continue;
+                            contractedEdges.Add(edge);
+                            res.Remove(edge);
+                            i--;
+                            if (contractedEdges.Count == _newCalc)
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < _newCalc; i++)
+                        {
+                            var edge = res[_random.Next(res.Count)];
+                            if (edge.Vertices.Count != 2)
+                                continue;
+                            res.Remove(edge);
+                            contractedEdges.Add(edge);
+                        }
                     }
 
                     foreach (var edge3 in res.Where(_ => _.Vertices.Count == 3))
@@ -207,13 +226,13 @@ namespace _3D_Matching.Solvers
                         }
 
                     }
-                    _graph.InitializeFor2DMatchin(contractingEdges: contractedEdges);
+                    _graph.InitializeFor2DMatchin(initialMatching: res.Where(_=>_.Vertices.Count==2).ToList(),contractingEdges: contractedEdges);
                     res = _graph.GetMaximum2DMatching().maxMmatching;
 
                     valuePerIteration.Add(res.Count + 0.0);
-                    
-                    
-                    
+
+
+
                     if (res.Count <= bestRes.Count)
                     {
                         bestRes = res.ToList();
@@ -225,10 +244,10 @@ namespace _3D_Matching.Solvers
                 }
                 res = bestRes;
 
-                var MIP = new ORTS();
-                MIP.initialize(_graph);
-                var bound = MIP.Run(parameters).cover.Count;
-                Plot.CreateFigure(valuePerIteration,plottype:"f", xLable: "Iterations", yLable: "Matching Size", title: "2DBased history of size ( ca 300 iterations/second",horizontal:""+bound, show:false);
+                //var MIP = new ORTS();
+                //MIP.initialize(_graph);
+                //var bound = MIP.Run(parameters).cover.Count;
+                //Plot.CreateFigure(valuePerIteration, plottype: "f", xLable: "Iterations", yLable: "Matching Size", title: "2DBased history of size ( ca 300 iterations/second", horizontal: "" + bound, show: false);
             }
 
 
