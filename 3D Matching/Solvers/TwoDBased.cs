@@ -170,32 +170,15 @@ namespace _3D_Matching.Solvers
                     iteration++;
 
                     var contractedEdges = new List<Edge>();
-                    if (iteration == 0) //maybe use here a better massure for the number of 3D edges, the 2Deges lie in
+                    for (int i = 0; i < _newCalc; i++)
                     {
-                        var sortedRes = res.OrderBy(_ => -_.Vertices.Min(x => x.AdjEdges.Count)).ToList();
-                        for (int i = 0; i < _newCalc; i++)
-                        {
-                            var edge = sortedRes[i];
-                            if (edge.Vertices.Count != 2)
-                                continue;
-                            contractedEdges.Add(edge);
-                            res.Remove(edge);
-                            i--;
-                            if (contractedEdges.Count == _newCalc)
-                                break;
-                        }
+                        var edge = res[_random.Next(res.Count)];
+                        if (edge.Vertices.Count != 2)
+                            continue;
+                        res.Remove(edge);
+                        contractedEdges.Add(edge);
                     }
-                    else
-                    {
-                        for (int i = 0; i < _newCalc; i++)
-                        {
-                            var edge = res[_random.Next(res.Count)];
-                            if (edge.Vertices.Count != 2)
-                                continue;
-                            res.Remove(edge);
-                            contractedEdges.Add(edge);
-                        }
-                    }
+                    
 
                     foreach (var edge3 in res.Where(_ => _.Vertices.Count == 3))
                     {
@@ -226,23 +209,23 @@ namespace _3D_Matching.Solvers
                         }
 
                     }
-                    _graph.InitializeFor2DMatchin(initialMatching: res.Where(_=>_.Vertices.Count==2).ToList(),contractingEdges: contractedEdges);
+
+                    _graph.InitializeFor2DMatchin(initialMatching: res.Where(_ => _.Vertices.Count == 2).ToList(), contractingEdges: contractedEdges);
                     res = _graph.GetMaximum2DMatching().maxMmatching;
 
                     valuePerIteration.Add(res.Count + 0.0);
-
-
 
                     if (res.Count <= bestRes.Count)
                     {
                         bestRes = res.ToList();
                     }
-                    else
+                    else 
                     {
                         res = bestRes.ToList();
                     }
                 }
                 res = bestRes;
+
 
                 //var MIP = new ORTS();
                 //MIP.initialize(_graph);
