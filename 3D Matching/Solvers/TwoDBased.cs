@@ -165,6 +165,13 @@ namespace _3D_Matching.Solvers
                 res = _graph.GetMaximum2DMatching().maxMmatching;
                 var bestRes = res.ToList();
 
+                //test...............
+                //var ThreeDEdges = _graph.Edges.Where(_ => _.Vertices.Count == 3).ToList();
+                //var edgeIsUsed = new double[ThreeDEdges.Count];
+
+                //...............
+
+
                 while (time.ElapsedMilliseconds < maxTime && iteration < maxIter)
                 {
                     iteration++;
@@ -179,6 +186,18 @@ namespace _3D_Matching.Solvers
                         contractedEdges.Add(edge);
                     }
                     
+                    //foreach(var ThreeDEdge in ThreeDEdges)
+                    //for(int i = 0; i<ThreeDEdges.Count;i++)
+                    //{
+                    //    var ThreeDEdge = ThreeDEdges[i];
+                    //    foreach(var contractedEdge in contractedEdges)
+                    //    {
+                    //        if (ThreeDEdge.Vertices.Contains(contractedEdge.Vertices[0]) && ThreeDEdge.Vertices.Contains(contractedEdge.Vertices[1]))
+                    //            edgeIsUsed[i] = 1;
+                    //    }
+                            
+                    //}
+
 
                     foreach (var edge3 in res.Where(_ => _.Vertices.Count == 3))
                     {
@@ -192,17 +211,17 @@ namespace _3D_Matching.Solvers
                             c = 3 - a - b;
                         }
 
-                        if (edge3.Vertices[0].AdjEdges.Contains(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[b] })))
+                        if (edge3.Vertices[a].AdjEdges.Contains(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[b] })))
                         {
                             contractedEdges.Add(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[b] }));
                             continue;
                         }
-                        if (edge3.Vertices[0].AdjEdges.Contains(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[c] })))
+                        if (edge3.Vertices[a].AdjEdges.Contains(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[c] })))
                         {
                             contractedEdges.Add(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[c] }));
                             continue;
                         }
-                        if (edge3.Vertices[0].AdjEdges.Contains(new Edge(new List<Vertex> { edge3.Vertices[c], edge3.Vertices[b] })))
+                        if (edge3.Vertices[c].AdjEdges.Contains(new Edge(new List<Vertex> { edge3.Vertices[c], edge3.Vertices[b] })))
                         {
                             contractedEdges.Add(new Edge(new List<Vertex> { edge3.Vertices[c], edge3.Vertices[b] }));
                             continue;
@@ -226,11 +245,12 @@ namespace _3D_Matching.Solvers
                 }
                 res = bestRes;
 
-
+                //Console.WriteLine(edgeIsUsed.Sum() / ThreeDEdges.Count);
                 //var MIP = new ORTS();
                 //MIP.initialize(_graph);
                 //var bound = MIP.Run(parameters).cover.Count;
                 //Plot.CreateFigure(valuePerIteration, plottype: "f", xLable: "Iterations", yLable: "Matching Size", title: "2DBased history of size ( ca 300 iterations/second", horizontal: "" + bound, show: false);
+                //Plot.CreateFigure(edgeIsUsed, xLable: "Iterations", yLable: "Matching Size", title: "2DBased history of size ( ca 300 iterations/second", show: false);
             }
 
 
