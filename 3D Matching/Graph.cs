@@ -382,10 +382,26 @@ namespace _3D_Matching
                 var augmentationHasBeenPerformed = false;
                 int blossomCount = 0;
 
+                augmentationHasBeenPerformed = TryAndDoAugmentation(potentialRoots, newRoot, plusTreeVertices, newRoot);
+
                 while (!augmentationHasBeenPerformed && stack.Count > 0)
                 {
                     var activeVertex = stack.First();
                     stack.Remove(activeVertex);
+
+                    //foreach(var v in stack)
+                    //for (int i = stack.Count / 2; i < stack.Count; i++)
+                    //{
+                    //    var v = stack[i];
+                    //    augmentationHasBeenPerformed = TryAndDoAugmentation(potentialRoots, newRoot, plusTreeVertices, v);
+                    //    if (augmentationHasBeenPerformed)
+                    //    {
+                    //        break;
+                    //    }
+                    //}
+                    //if (augmentationHasBeenPerformed)
+                    //    break;
+
 
 
                     for (int neighbourIndex = 0; neighbourIndex < activeVertex.NeighboursFor2DMatching.Count; neighbourIndex++)
@@ -393,8 +409,20 @@ namespace _3D_Matching
                         var activeNeighbour = activeVertex.NeighboursFor2DMatching[neighbourIndex];
                         if (activeNeighbour.IsInTree && (activeNeighbour.BlossomIndex != activeVertex.BlossomIndex || activeNeighbour.BlossomIndex + activeVertex.BlossomIndex == 0) && (activeNeighbour.Predecessor == null || activeNeighbour.OddPath != null))
                         { // do blossom building.                         => no blossominternal edge                                                                                            =>is of type plus               => is blossom of tpye plus          
-
+                            var oldStackCount = stack.Count;
                             CalculateAndSetOddPaths(activeVertex, activeNeighbour, stack, plusTreeVertices, ref blossomCount);
+                            
+                            for (int i = oldStackCount; i < stack.Count; i++)
+                            {
+                                var v = stack[i];
+                                augmentationHasBeenPerformed = TryAndDoAugmentation(potentialRoots, newRoot, plusTreeVertices, v);
+                                if (augmentationHasBeenPerformed)
+                                {
+                                    break;
+                                }
+                            }
+                            if (augmentationHasBeenPerformed)
+                                break;
 
                         }
                         else if (activeNeighbour.IsInTree == false)
@@ -417,6 +445,12 @@ namespace _3D_Matching
 
                                 newPlusVertex.IsInTree = true;
                                 activeNeighbour.IsInTree = true;
+
+                                augmentationHasBeenPerformed = TryAndDoAugmentation(potentialRoots, newRoot, plusTreeVertices, newPlusVertex);
+                                if (augmentationHasBeenPerformed)
+                                {
+                                    break;
+                                }
                             }
                         }
                     }
@@ -431,6 +465,23 @@ namespace _3D_Matching
             List<Vertex> uncoveredVertices;
             ReconstructMatching(out resMatching, out uncoveredVertices);
             return (resMatching, uncoveredVertices);
+        }
+
+        private bool TryAndDoAugmentation(List<Vertex> potentialRoots, Vertex newRoot, List<Vertex> plusTreeVertices, Vertex activeVertex)
+        {
+            bool augmentationHasBeenPerformed = false;
+            for (int i = 0; i < activeVertex.NeighboursFor2DMatching.Count; i++)
+            {
+                var neighbour = activeVertex.NeighboursFor2DMatching[i];
+                if (neighbour.MatchedVertex == null && neighbour != newRoot)
+                {
+                    Augment(potentialRoots, plusTreeVertices, activeVertex, neighbour);
+                    augmentationHasBeenPerformed = true;
+                    break;
+                }
+            }
+
+            return augmentationHasBeenPerformed;
         }
 
         private void ReconstructMatching(out List<Edge> resMatching, out List<Vertex> uncoveredVertices)
