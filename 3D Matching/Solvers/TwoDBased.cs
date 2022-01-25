@@ -260,9 +260,9 @@ namespace _3D_Matching.Solvers
                         }
                         else
                         {//switch contracted edge of 3D edge
-                            if (_random.NextDouble() > 0.33)
+                            if (_random.NextDouble() > 0.5)
                                 continue;
-                            if (contractedVertex.MatchedVertex.Adj3Edges.Contains(new Edge(new List<Vertex> { contractedVertex.OriginalVertex0, contractedVertex.MatchedVertex })))
+                            if (contractedVertex.MatchedVertex.Adj3Edges.Contains(new Edge(new List<Vertex> { contractedVertex.OriginalVertex0, contractedVertex.MatchedVertex })) && _random.NextDouble() > 0.5)
                             {
                                 var newNotContracted = contractedVertex.OriginalVertex1;
                                 var newContracted = contractedVertex.MatchedVertex;
@@ -285,6 +285,18 @@ namespace _3D_Matching.Solvers
                                 newNotContracted.MatchedVertex = newContracted.ContractedVertex;
                                 newContracted.ContractedVertex.MatchedVertex = newNotContracted;
                             }
+                            else if (contractedVertex.MatchedVertex.Adj3Edges.Contains(new Edge(new List<Vertex> { contractedVertex.OriginalVertex0, contractedVertex.MatchedVertex })))
+                            {
+                                var newNotContracted = contractedVertex.OriginalVertex1;
+                                var newContracted = contractedVertex.MatchedVertex;
+
+                                DoExpand(contractedVertex);
+                                DoContract(contractedVertex.OriginalVertex0, contractedVertex.MatchedVertex);
+
+                                newContracted.MatchedVertex = newNotContracted.ContractedVertex;
+                                newNotContracted.ContractedVertex.MatchedVertex = newContracted;
+
+                            }
                         }
                     }
 
@@ -294,7 +306,7 @@ namespace _3D_Matching.Solvers
                         var vertex = _graph.Vertices[i];
                         if (vertex.IsContracted || vertex.MatchedVertex == null || vertex.MatchedVertex.Id<0)
                             continue;
-                        if (_random.NextDouble() > 0.9)
+                        if (_random.NextDouble() > 0.1)
                             continue;
                         DoContract(vertex, vertex.MatchedVertex);
                     }
