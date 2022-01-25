@@ -194,10 +194,21 @@ namespace _3D_Matching
                 return;
             _adjEdgesAreInitialized = true;
             foreach (var vertex in Vertices)
+            {
                 vertex.AdjEdges = new List<Edge>();
+                vertex.Adj2Edges = new List<Edge>();
+                vertex.Adj3Edges = new List<Edge>();
+            }
             foreach (var edge in _edges)
                 foreach (var vertex in edge.Vertices)
+                {
                     vertex.AdjEdges.Add(edge);
+                    if (edge.Vertices.Count == 2)
+                        vertex.Adj2Edges.Add(edge);
+                    else if (edge.Vertices.Count == 3)
+                        vertex.Adj3Edges.Add(edge);
+
+                }
         }
         public void ResetVertexAdjEdges()
         {
@@ -362,7 +373,6 @@ namespace _3D_Matching
 
         public (List<Edge> maxMmatching, List<Vertex> uncoveredVertices) GetMaximum2DMatching()
         {
-            var _random = new Random();
             List<Vertex> potentialRoots;
             if (ContractedVertices == null)
                 potentialRoots = Vertices.Where(_ => _.MatchedVertex == null).ToList();
@@ -389,21 +399,6 @@ namespace _3D_Matching
                     var activeVertex = stack.First();
                     stack.Remove(activeVertex);
 
-                    //foreach(var v in stack)
-                    //for (int i = stack.Count / 2; i < stack.Count; i++)
-                    //{
-                    //    var v = stack[i];
-                    //    augmentationHasBeenPerformed = TryAndDoAugmentation(potentialRoots, newRoot, plusTreeVertices, v);
-                    //    if (augmentationHasBeenPerformed)
-                    //    {
-                    //        break;
-                    //    }
-                    //}
-                    //if (augmentationHasBeenPerformed)
-                    //    break;
-
-
-
                     for (int neighbourIndex = 0; neighbourIndex < activeVertex.NeighboursFor2DMatching.Count; neighbourIndex++)
                     {
                         var activeNeighbour = activeVertex.NeighboursFor2DMatching[neighbourIndex];
@@ -427,14 +422,7 @@ namespace _3D_Matching
                         }
                         else if (activeNeighbour.IsInTree == false)
                         {
-                            if (activeNeighbour.MatchedVertex == null)
-                            {// Augment
-                                Augment(potentialRoots, plusTreeVertices, activeVertex, activeNeighbour);
-
-                                augmentationHasBeenPerformed = true;
-                                break;
-                            }
-                            else
+                            if (activeNeighbour.MatchedVertex != null)
                             {// grow
                                 var newPlusVertex = activeNeighbour.MatchedVertex;
                                 activeNeighbour.Label = activeVertex.Label * -1;
@@ -467,6 +455,87 @@ namespace _3D_Matching
             return (resMatching, uncoveredVertices);
         }
 
+        public void ComputeMaximum2DMatching()
+        {
+            List<Vertex> potentialRoots;
+            if (ContractedVertices == null)
+                potentialRoots = Vertices.Where(_ => _.MatchedVertex == null).ToList();
+            else
+                potentialRoots = Vertices.Concat(ContractedVertices).Where(_ => _.MatchedVertex == null && !_.IsContracted)/*.OrderBy(_=>_random.Next())*/.ToList();
+
+            while (potentialRoots.Count > 0)
+            {
+                var newRoot = potentialRoots.First();
+                newRoot.Label = 1;
+                newRoot.IsInTree = true;
+                var plusTreeVertices = new List<Vertex>();
+                plusTreeVertices.Add(newRoot);
+                potentialRoots.RemoveAt(0);
+                var stack = new List<Vertex>();
+                stack.Add(newRoot);
+
+                var augmentationHasBeenPerformed = false;
+                int blossomCount = 0;
+
+                augmentationHasBeenPerformed = TryAndDoAugmentation(potentialRoots, newRoot, plusTreeVertices, newRoot);
+
+                while (!augmentationHasBeenPerformed && stack.Count > 0)
+                {
+                    var activeVertex = stack.First();
+                    stack.Remove(activeVertex);
+
+                    for (int neighbourIndex = 0; neighbourIndex < activeVertex.NeighboursFor2DMatching.Count; neighbourIndex++)
+                    {
+                        var activeNeighbour = activeVertex.NeighboursFor2DMatching[neighbourIndex];
+                        if (activeNeighbour.IsInTree && (activeNeighbour.BlossomIndex != activeVertex.BlossomIndex || activeNeighbour.BlossomIndex + activeVertex.BlossomIndex == 0) && (activeNeighbour.Predecessor == null || activeNeighbour.OddPath != null))
+                        { // do blossom building.                         => no blossominternal edge                                                                                            =>is of type plus               => is blossom of tpye plus          
+                            var oldStackCount = stack.Count;
+                            CalculateAndSetOddPaths(activeVertex, activeNeighbour, stack, plusTreeVertices, ref blossomCount);
+
+                            for (int i = oldStackCount; i < stack.Count; i++)
+                            {
+                                var v = stack[i];
+                                augmentationHasBeenPerformed = TryAndDoAugmentation(potentialRoots, newRoot, plusTreeVertices, v);
+                                if (augmentationHasBeenPerformed)
+                                {
+                                    break;
+                                }
+                            }
+                            if (augmentationHasBeenPerformed)
+                                break;
+
+                        }
+                        else if (activeNeighbour.IsInTree == false)
+                        {
+                            if (activeNeighbour.MatchedVertex != null)
+                            {// grow
+                                var newPlusVertex = activeNeighbour.MatchedVertex;
+                                activeNeighbour.Label = activeVertex.Label * -1;
+                                newPlusVertex.Label = activeVertex.Label;
+                                stack.Add(newPlusVertex);
+                                activeNeighbour.Predecessor = activeVertex;
+                                plusTreeVertices.Add(newPlusVertex);
+
+                                newPlusVertex.IsInTree = true;
+                                activeNeighbour.IsInTree = true;
+
+                                augmentationHasBeenPerformed = TryAndDoAugmentation(potentialRoots, newRoot, plusTreeVertices, newPlusVertex);
+                                if (augmentationHasBeenPerformed)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                }
+                if (!augmentationHasBeenPerformed)
+                {
+                    augmentationHasBeenPerformed = PartialAugment(potentialRoots, newRoot, plusTreeVertices, augmentationHasBeenPerformed);
+                }
+            }
+        }
+
         private bool TryAndDoAugmentation(List<Vertex> potentialRoots, Vertex newRoot, List<Vertex> plusTreeVertices, Vertex activeVertex)
         {
             bool augmentationHasBeenPerformed = false;
@@ -475,6 +544,8 @@ namespace _3D_Matching
                 var neighbour = activeVertex.NeighboursFor2DMatching[i];
                 if (neighbour.MatchedVertex == null && neighbour != newRoot)
                 {
+                    //if (neighbour.IsContracted)
+                    //    ;
                     Augment(potentialRoots, plusTreeVertices, activeVertex, neighbour);
                     augmentationHasBeenPerformed = true;
                     break;
@@ -1120,7 +1191,10 @@ namespace _3D_Matching
         public bool IsContracted;
         public int BlossomIndex;
         public int Label;
-
+        public List<Edge> Adj2Edges;
+        public List<Edge> Adj3Edges;
+        public Vertex ContractedWith;
+        public Vertex ContractedVertex;
 
 
         public bool IsCovered = false;
