@@ -294,17 +294,11 @@ namespace _3D_Matching.Solvers
                         var vertex = _graph.Vertices[i];
                         if (vertex.IsContracted || vertex.MatchedVertex == null || vertex.MatchedVertex.Id<0)
                             continue;
-                        if (vertex.MatchedVertex.IsContracted)
-                            ;
                         if (_random.NextDouble() > 0.9)
                             continue;
                         DoContract(vertex, vertex.MatchedVertex);
                     }
 
-                    foreach(var vertex in _graph.Vertices)
-                    {
-                        vertex.NeighboursFor2DMatching = vertex.NeighboursFor2DMatching.OrderBy(_ => _.Id).ToList();
-                    }
                     _graph.ComputeMaximum2DMatching();
                 }
 
