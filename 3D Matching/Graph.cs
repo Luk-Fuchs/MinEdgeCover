@@ -1,4 +1,5 @@
-﻿using System;
+﻿using _3D_Matching.Tests;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -286,6 +287,8 @@ namespace _3D_Matching
                 vertex.IsInTree = false;
                 vertex.OddPath = null;
                 vertex.NeighboursFor2DMatching = new List<Vertex>();
+                vertex.ContractedVertex = null;
+                vertex.ContractedWith = null;
             }
 
             if (contractingEdges != null)
@@ -331,25 +334,23 @@ namespace _3D_Matching
                     var contractingEdge = contractingEdges[i];
                     var vertex0 = contractingEdge.Vertices[0];
                     var vertex1 = contractingEdge.Vertices[1];
-
+                    vertex0.ContractedWith = vertex1;
+                    vertex1.ContractedWith = vertex0;
                     var contractedVertex = new Vertex(-i - 1);
                     contractedVertex.OriginalVertex0 = vertex0;
                     contractedVertex.OriginalVertex1 = vertex1;
                     contractedVertex.NeighboursFor2DMatching = new List<Vertex>();
 
                     ContractedVertices.Add(contractedVertex);
-                    if (vertex0.AdjEdges.Count > vertex1.AdjEdges.Count)
+                    if (vertex0.Adj3Edges.Count > vertex1.Adj3Edges.Count)
                     {
                         var tmp = vertex0;
                         vertex0 = vertex1;
                         vertex1 = tmp;
                     }
-                    for(int k = 0; k<vertex0.AdjEdges.Count;k++)
+                    for (int k = 0; k < vertex0.Adj3Edges.Count; k++)
                     {
-                        var edge = vertex0.AdjEdges[k];
-                        if (edge.Vertices.Count != 3)
-                            continue;
-
+                        var edge = vertex0.Adj3Edges[k];
                         if (((edge.Vertices[0] == vertex0 && edge.Vertices[1] == vertex1) || (edge.Vertices[1] == vertex0 && edge.Vertices[0] == vertex1)) && edge.Vertices[2].IsContracted == false)
                         {
                             edge.Vertices[2].NeighboursFor2DMatching.Add(contractedVertex);
@@ -1115,6 +1116,13 @@ namespace _3D_Matching
         public Vertex plusVertex;
         public Edge linkingEdge;
         public int treeIndex;
+
+        public Vertex vertex0;
+        public Vertex vertex1;
+        public Vertex vertex2;
+        public int VertexCount;
+
+
         public Edge(List<Vertex> vertices)
         {
             Vertices = vertices;
@@ -1123,6 +1131,36 @@ namespace _3D_Matching
         public override string ToString()
         {
             return String.Join(" ", Vertices.Select(_=>_.Id));
+        }
+        public bool Contains(Vertex vertex)
+        {
+            if (vertex0 == vertex)
+                return true;
+            if (vertex1 == vertex)
+                return true;
+            if (vertex2 == vertex)
+                return true;
+            return false;
+        }
+        public bool Contains(Edge edge)
+        {
+            if(edge.VertexCount == 1)
+            {
+                if (this.Contains(edge.vertex0))
+                    return true;
+            }
+            else if(edge.VertexCount == 2)
+            {
+                if (this.Contains(edge.vertex0) && this.Contains(edge.vertex1))
+                    return true;
+            }
+            else
+            {
+                if (vertex0 == edge.vertex0 && vertex1 == edge.vertex1 && vertex2==edge.vertex2)    //funktioniert nur wenn sortiert
+                    return true;
+            } 
+                
+
         }
         public override bool Equals(Object otherEdge)          //immer Knoten in Kante aufsteigend sortieren, sonst fehleranfällig!
         {
