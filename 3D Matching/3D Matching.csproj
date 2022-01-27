@@ -5,6 +5,9 @@
     <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>_3D_Matching</RootNamespace>
     <Platforms>AnyCPU;x64</Platforms>
+
+	 <ServerGarbageCollection>true</ServerGarbageCollection>
+	 <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>
