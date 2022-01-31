@@ -262,7 +262,7 @@ namespace _3D_Matching
             return tmpGraph;
         }
 
-        public void InitializeFor2DMatchin(List<(Vertex,Vertex)> initialMatching = null, List<(Vertex,Vertex)> contractingEdges = null)
+        public void InitializeFor2DMatchin(List<(Vertex,Vertex)> initialMatching = null, List<(Vertex,Vertex)> contractingEdges = null, List<(Vertex,int)> initial3DEdges = null)
         {
             SetVertexAdjEdges();
             ContractedVertices = new List<Vertex>(50);
@@ -283,6 +283,18 @@ namespace _3D_Matching
             SetContractingVerticesNeighberhood(contractingEdges);
 
             SetInitialMatching(initialMatching);
+
+            if (initial3DEdges != null)
+            {
+                for(int i = 0; i< initial3DEdges.Count; i++)
+                {
+                    var vertex = initial3DEdges[i].Item1;
+                    var contractedVertex = ContractedVertices[initial3DEdges[i].Item2];
+
+                    vertex.MatchedVertex = contractedVertex;
+                    contractedVertex.MatchedVertex = vertex;
+                }
+            }
         }
 
         private void SetInitialValuesForVertices(List<(Vertex,Vertex)> contractingEdges)
@@ -618,35 +630,40 @@ namespace _3D_Matching
 
         private void ReconstructMatching(out List<Edge> resMatching, out List<Vertex> uncoveredVertices)
         {
-            resMatching = new List<Edge>();
+            resMatching = new List<Edge>(Vertices.Count / 2);
             uncoveredVertices = new List<Vertex>();
-            foreach (var vertex in Vertices.Concat(ContractedVertices).Where(_ => !_.IsContracted))
+            //foreach (var vertex in Vertices.Concat(ContractedVertices).Where(_ => !_.IsContracted))
+            for (int i = 0; i < Vertices.Count; i++)
             {
+                var vertex = Vertices[i];
+                if (vertex.IsContracted)
+                    continue;
                 if (vertex.MatchedVertex != null)
                 {
                     if (vertex.Id < vertex.MatchedVertex.Id)
                     {
-                        if (vertex.Id < 0)//contracted Vertex
-                        {
-                            resMatching.Add(new Edge(new List<Vertex> { vertex.OriginalVertex0, vertex.OriginalVertex1, vertex.MatchedVertex }));
-                        }
-                        else //normal vertex
-                        {
-                            resMatching.Add(new Edge(new List<Vertex> { vertex, vertex.MatchedVertex }));
-                        }
-
+                        resMatching.Add(new Edge(new List<Vertex> { vertex, vertex.MatchedVertex }));
                     }
                 }
                 else
                 {
-                    if (vertex.Id < 0)
+                    uncoveredVertices.Add(vertex);
+                    resMatching.Add(new Edge(new List<Vertex> { vertex }));
+
+                }
+            }
+            if (ContractedVertices != null)
+            {
+                for (int i = 0; i < ContractedVertices.Count; i++)
+                {
+                    var contractedVertex = ContractedVertices[i];
+                    if (contractedVertex.MatchedVertex != null)
                     {
-                        resMatching.Add(new Edge(new List<Vertex> { vertex.OriginalVertex0, vertex.OriginalVertex1 }));
+                        resMatching.Add(new Edge(new List<Vertex> { contractedVertex.OriginalVertex0, contractedVertex.OriginalVertex1, contractedVertex.MatchedVertex }));
                     }
                     else
                     {
-                        uncoveredVertices.Add(vertex);
-                        resMatching.Add(new Edge(new List<Vertex> { vertex }));
+                        resMatching.Add(new Edge(new List<Vertex> { contractedVertex.OriginalVertex0, contractedVertex.OriginalVertex1 }));
                     }
                 }
             }
@@ -654,8 +671,10 @@ namespace _3D_Matching
 
         private bool PartialAugment(/*List<Vertex> potentialRoots,*/ Vertex newRoot, List<Vertex> plusTreeVertices, bool augmentationHasBeenPerformed)
         {
-            foreach (var x in plusTreeVertices)     //save as bool at vertex if allowed as singleton
+            //foreach (var x in plusTreeVertices)     //save as bool at vertex if allowed as singleton
+            for(int i = 0; i< plusTreeVertices.Count;i++)
             {
+                var x = plusTreeVertices[i];
                 if (x.Id<0 || x.AdjEdges.Contains(new Edge(new List<Vertex> { x })))
                 {
                     if (x == newRoot)
@@ -1051,8 +1070,10 @@ namespace _3D_Matching
 
         public bool AllVerticesAreUncovered()
         {
-            foreach (var vertex in Vertices)
+            //foreach (var vertex in Vertices)
+            for(int i = 0;i< Vertices.Count;i++)
             {
+                var vertex = Vertices[i];
                 if (vertex.IsCovered)
                     return false;
             }
@@ -1060,8 +1081,9 @@ namespace _3D_Matching
         }
         public bool AllVerticesAreCoveredAtleastTwice()
         {
-            foreach (var vertex in Vertices)
+            for (int i = 0; i < Vertices.Count; i++)
             {
+                var vertex = Vertices[i];
                 if (vertex.TimesCovered<2)
                     return false;
             }
