@@ -129,15 +129,15 @@ namespace _3D_Matching
                 var activeLine = inputLines[rowCount];
                 if (activeLine.Contains("--"))
                     continue;
-                var newEdge = new Edge(activeLine.Split("->").Select(_ => vertices[Int32.Parse(_)]).ToList());
+                var edgeVertices = activeLine.Split("->").Select(_ => vertices[Int32.Parse(_)]).ToList();
+                var newEdge = new Edge(edgeVertices);
+                newEdge.vertex0 = edgeVertices[0];
+                if(edgeVertices.Count>=2)
+                    newEdge.vertex1 = edgeVertices[1];
+                if(edgeVertices.Count>=3)
+                    newEdge.vertex2 = edgeVertices[2];
                 edges.Add(newEdge);
             }
-
-
-            //foreach (var vertex in vertices)        //wichtig falls kein matching existiert
-            //{
-            //    edges.Add(new Edge(new List<Vertex> { vertex }));
-            //}
 
             var graph = new Graph(edges, vertices);
 
@@ -257,16 +257,17 @@ namespace _3D_Matching
             return tmpGraph;
         }
 
-        public void InitializeFor2DMatchin(List<Edge> initialMatching = null, List<Edge> contractingEdges = null)
+        public void InitializeFor2DMatchin(List<(Vertex,Vertex)> initialMatching = null, List<(Vertex,Vertex)> contractingEdges = null)
         {
             SetVertexAdjEdges();
-            ContractedVertices = new List<Vertex>();
+            ContractedVertices = new List<Vertex>(50);
 
             //initialize Vertices
             SetInitialValuesForVertices(contractingEdges);
 
-            foreach (var edge in TwodEdges())
+            for(int i = 0;i< TwodEdges().Count;i++)
             {
+                var edge = TwodEdges()[i];
                 if (edge.Vertices[0].IsContracted || edge.Vertices[1].IsContracted)
                     continue;
                 edge.Vertices[1].NeighboursFor2DMatching.Add(edge.Vertices[0]);
@@ -278,7 +279,7 @@ namespace _3D_Matching
             SetInitialMatching(initialMatching);
         }
 
-        private void SetInitialValuesForVertices(List<Edge> contractingEdges)
+        private void SetInitialValuesForVertices(List<(Vertex,Vertex)> contractingEdges)
         {
             foreach (var vertex in Vertices) //nicht jedesmal resetten sondern weiter benutzen
             {
@@ -286,7 +287,7 @@ namespace _3D_Matching
                 vertex.MatchedVertex = null;
                 vertex.IsInTree = false;
                 vertex.OddPath = null;
-                vertex.NeighboursFor2DMatching = new List<Vertex>();
+                vertex.NeighboursFor2DMatching = new List<Vertex>(vertex.Adj2Edges.Count*2);
                 vertex.ContractedVertex = null;
                 vertex.ContractedWith = null;
             }
@@ -296,8 +297,8 @@ namespace _3D_Matching
                 for (int i = 0; i < contractingEdges.Count; i++)
                 {
                     var contractingEdge = contractingEdges[i];
-                    var vertex0 = contractingEdge.Vertices[0];
-                    var vertex1 = contractingEdge.Vertices[1];
+                    var vertex0 = contractingEdge.Item1;
+                    var vertex1 = contractingEdge.Item2;
 
                     vertex0.IsContracted = true;
                     vertex1.IsContracted = true;
@@ -305,17 +306,17 @@ namespace _3D_Matching
             }
         }
 
-        private static void SetInitialMatching(List<Edge> initialMatching)
+        private static void SetInitialMatching(List<(Vertex,Vertex)> initialMatching)
         {
             if (initialMatching != null)
             {
                 for (int i = 0; i < initialMatching.Count; i++)
                 {
                     var edge = initialMatching[i];
-                    if (edge.Vertices.Count == 2)
+                    if (edge.Item1.Id>=0 && edge.Item2.Id>=0)
                     {
-                        var vertex0 = edge.Vertices[0];
-                        var vertex1 = edge.Vertices[1];
+                        var vertex0 = edge.Item1;
+                        var vertex1 = edge.Item2;
 
                         vertex0.MatchedVertex = vertex1;
                         vertex1.MatchedVertex = vertex0;
@@ -325,49 +326,73 @@ namespace _3D_Matching
             }
         }
 
-        private void SetContractingVerticesNeighberhood(List<Edge> contractingEdges)
+        private void SetContractingVerticesNeighberhood(List<(Vertex,Vertex)> contractingEdges)
         {
             if (contractingEdges != null)
             {
                 for (int i = 0; i < contractingEdges.Count; i++)
                 {
                     var contractingEdge = contractingEdges[i];
-                    var vertex0 = contractingEdge.Vertices[0];
-                    var vertex1 = contractingEdge.Vertices[1];
+                    var vertex0 = contractingEdge.Item1;
+                    var vertex1 = contractingEdge.Item2;
+
+                    Edge edge = null;
+                    for (int j = 0; j < vertex0.Adj2Edges.Count; j++)
+                        if (vertex0.Adj2Edges[j].Contains(vertex1))
+                        {
+                            edge = vertex0.Adj2Edges[j];
+                            break;
+                        }
+                    var expandables = edge.Expandables();
                     vertex0.ContractedWith = vertex1;
                     vertex1.ContractedWith = vertex0;
                     var contractedVertex = new Vertex(-i - 1);
                     contractedVertex.OriginalVertex0 = vertex0;
                     contractedVertex.OriginalVertex1 = vertex1;
-                    contractedVertex.NeighboursFor2DMatching = new List<Vertex>();
+                    contractedVertex.NeighboursFor2DMatching = new List<Vertex>(expandables.Count);
 
                     ContractedVertices.Add(contractedVertex);
-                    if (vertex0.Adj3Edges.Count > vertex1.Adj3Edges.Count)
+                    if (vertex0.Adj2Edges.Count > vertex1.Adj2Edges.Count)
                     {
                         var tmp = vertex0;
                         vertex0 = vertex1;
                         vertex1 = tmp;
                     }
-                    for (int k = 0; k < vertex0.Adj3Edges.Count; k++)
-                    {
-                        var edge = vertex0.Adj3Edges[k];
-                        if (((edge.Vertices[0] == vertex0 && edge.Vertices[1] == vertex1) || (edge.Vertices[1] == vertex0 && edge.Vertices[0] == vertex1)) && edge.Vertices[2].IsContracted == false)
-                        {
-                            edge.Vertices[2].NeighboursFor2DMatching.Add(contractedVertex);
-                            contractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[2]);
-                        }
-                        else if (((edge.Vertices[2] == vertex0 && edge.Vertices[1] == vertex1) || (edge.Vertices[1] == vertex0 && edge.Vertices[2] == vertex1)) && edge.Vertices[0].IsContracted == false)
-                        {
-                            edge.Vertices[0].NeighboursFor2DMatching.Add(contractedVertex);
-                            contractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[0]);
-                        }
-                        else if (((edge.Vertices[2] == vertex0 && edge.Vertices[0] == vertex1) || (edge.Vertices[0] == vertex0 && edge.Vertices[2] == vertex1)) && edge.Vertices[1].IsContracted == false)
-                        {
-                            edge.Vertices[1].NeighboursFor2DMatching.Add(contractedVertex);
-                            contractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[1]);
-                        }
 
+                    for(int j = 0; j < expandables.Count; j++)
+                    {
+                        var expandableVertex = expandables[j];
+                        if (expandableVertex.IsContracted)
+                            continue;
+                        expandableVertex.NeighboursFor2DMatching.Add(contractedVertex);
+                        contractedVertex.NeighboursFor2DMatching.Add(expandableVertex);
                     }
+                    //if (vertex0.Adj3Edges.Count > vertex1.Adj3Edges.Count)
+                    //{
+                    //    var tmp = vertex0;
+                    //    vertex0 = vertex1;
+                    //    vertex1 = tmp;
+                    //}
+                    //for (int k = 0; k < vertex0.Adj3Edges.Count; k++)
+                    //{
+                    //    var edge = vertex0.Adj3Edges[k];
+                    //    if (((edge.Vertices[0] == vertex0 && edge.Vertices[1] == vertex1) || (edge.Vertices[1] == vertex0 && edge.Vertices[0] == vertex1)) && edge.Vertices[2].IsContracted == false)
+                    //    {
+                    //        edge.Vertices[2].NeighboursFor2DMatching.Add(contractedVertex);
+                    //        contractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[2]);
+                    //    }
+                    //    else if (((edge.Vertices[2] == vertex0 && edge.Vertices[1] == vertex1) || (edge.Vertices[1] == vertex0 && edge.Vertices[2] == vertex1)) && edge.Vertices[0].IsContracted == false)
+                    //    {
+                    //        edge.Vertices[0].NeighboursFor2DMatching.Add(contractedVertex);
+                    //        contractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[0]);
+                    //    }
+                    //    else if (((edge.Vertices[2] == vertex0 && edge.Vertices[0] == vertex1) || (edge.Vertices[0] == vertex0 && edge.Vertices[2] == vertex1)) && edge.Vertices[1].IsContracted == false)
+                    //    {
+                    //        edge.Vertices[1].NeighboursFor2DMatching.Add(contractedVertex);
+                    //        contractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[1]);
+                    //    }
+
+                            //}
                 }
             }
         }
@@ -596,7 +621,7 @@ namespace _3D_Matching
         {
             foreach (var x in plusTreeVertices)     //save as bool at vertex if allowed as singleton
             {
-                if (x.Id < 0 || x.AdjEdges.Contains(new Edge(new List<Vertex> { x })))
+                if (x.Id<0 || x.AdjEdges.Contains(new Edge(new List<Vertex> { x })))
                 {
                     if (x == newRoot)
                         break;
@@ -619,9 +644,11 @@ namespace _3D_Matching
                     break;
                 }
             }
+           
             ResetTree(plusTreeVertices);
             return augmentationHasBeenPerformed;
         }
+
 
         private void Augment(List<Vertex> potentialRoots, List<Vertex> plusTreeVertices, Vertex activeVertex, Vertex activeNeighbour)
         {
@@ -673,361 +700,68 @@ namespace _3D_Matching
             }
             return newUpwardsInfo;
         }
-    
-
-        private static void CalculateAndSetOddPaths1(Vertex aVertex, Vertex bVertex, List<Vertex> stack, List<Vertex> plusTreeVertices, ref int blossomCount)
-        {
-            //search commom vertex
-            var hashSetVertex = new HashSet<Vertex>();
-            var hashSetBlossomIndex = new HashSet<int>();
-            Vertex x = aVertex;
-            if (x.Predecessor!=null)
-            {
-                x = x.Predecessor;
-            }
-            while (x != null)
-            {
-                hashSetVertex.Add(x);
-                if (x.BlossomIndex != 0)
-                    hashSetBlossomIndex.Add(x.BlossomIndex);
-                x = x.MatchedVertex;
-                if (x == null)
-                    break;
-                x = x.Predecessor;
-            }
-            x = bVertex;
-            if (x.Predecessor != null)
-            {
-                x = x.Predecessor;
-            }
-            while (!hashSetVertex.Contains(x) && !hashSetBlossomIndex.Contains(x.BlossomIndex))
-            {
-                x = x.MatchedVertex;
-                x = x.Predecessor;
-            }
-            var commonB = x;
-            Vertex commonA;
-            if (hashSetVertex.Contains(x))
-                commonA = x;
-            else
-            {
-                x = aVertex;
-                if (x.Predecessor != null)
-                {
-                    x = x.Predecessor;
-                }
-                while (x.BlossomIndex != commonB.BlossomIndex)
-                {
-                    x = x.MatchedVertex;
-                    x = x.Predecessor;
-                }
-                commonA = x;
-            }
-
-
-            //compute BlossomPath
-            var aPathUpwards = new List<Vertex>();
-            x = aVertex;
-            if (x.Predecessor != null)
-            {
-                aPathUpwards.Add(x);
-                aPathUpwards.AddRange(x.OddPath);
-                x = aPathUpwards.Last();
-                aPathUpwards.Remove(aPathUpwards.Last());
-            }
-            while (x != commonA)
-            {
-                aPathUpwards.Add(x);
-                x = x.MatchedVertex;
-                aPathUpwards.Add(x);
-                x = x.Predecessor;
-            }
-            aPathUpwards.Add(x);
-
-            var bPathUpwards = new List<Vertex>();
-            x = bVertex;
-            if (x.Predecessor != null)
-            {
-                bPathUpwards.Add(x);
-                bPathUpwards.AddRange(x.OddPath);
-                x = bPathUpwards.Last();
-                bPathUpwards.Remove(bPathUpwards.Last());
-            }
-            while (x != commonB)
-            {
-                bPathUpwards.Add(x);
-                x = x.MatchedVertex;
-                bPathUpwards.Add(x);
-                x = x.Predecessor;
-            }
-            bPathUpwards.Add(x);
-            var aPathDownwards = aPathUpwards.ToList();
-            aPathDownwards.Reverse();
-            var bPathDownwards = bPathUpwards.ToList();
-            bPathDownwards.Reverse();
-
-
-            //set oddPaths
-            for(int i = 1; i< aPathDownwards.Count; i += 2)
-            {
-                x = aPathDownwards[i];
-                x.OddPath = aPathDownwards.Skip(i + 1).Concat(bPathUpwards).ToList();
-                stack.Add(x);
-                plusTreeVertices.Add(x);
-            }
-            for (int i = 1; i < bPathDownwards.Count; i += 2)
-            {
-                x = bPathDownwards[i];
-                x.OddPath = bPathDownwards.Skip(i + 1).Concat(aPathUpwards).ToList();
-                stack.Add(x);
-                plusTreeVertices.Add(x);
-            }
-
-            var blossomIndizesToReplace = aPathDownwards.Concat(bPathDownwards).Where(_=>_.BlossomIndex!=0).Select(_ => _.BlossomIndex).Distinct().ToHashSet();
-            blossomCount++;
-
-            foreach(var plusVertex in plusTreeVertices)
-            {
-                if (blossomIndizesToReplace.Contains(plusVertex.BlossomIndex))
-                {
-                    plusVertex.BlossomIndex = blossomCount;
-                    if (plusVertex.MatchedVertex != null)
-                        plusVertex.MatchedVertex.BlossomIndex = blossomCount;
-                }
-            }
-            foreach (var plusVertex in aPathDownwards)
-            {
-                plusVertex.BlossomIndex = blossomCount;
-            }
-            foreach (var plusVertex in bPathDownwards)
-            {
-                plusVertex.BlossomIndex = blossomCount;
-            }
-        }
-        private static void CalculateAndSetOddPaths2(Vertex aVertex, Vertex bVertex, List<Vertex> stack, List<Vertex> plusTreeVertices, ref int blossomCount)
-        {
-            //search commom vertex
-            var hashSetVertex = new HashSet<Vertex>();
-            var hashSetBlossomIndex = new HashSet<int>();
-            Vertex x = aVertex;
-            if (x.Predecessor != null)
-            {
-                hashSetVertex.Add(x);
-                x = x.Predecessor;
-            }
-            while (x != null)
-            {
-                hashSetVertex.Add(x);
-                if (x.MatchedVertex == null)
-                    break;
-                x = x.MatchedVertex;
-                hashSetVertex.Add(x);
-                x = x.Predecessor;
-            }
-            x = bVertex;
-            while (!hashSetVertex.Contains(x))
-            {
-                if (x.Predecessor != null)
-                    x = x.Predecessor;
-                else
-                    x = x.MatchedVertex;
-            }
-            var firstRealCommonVertex = x;
-            Vertex commonA;
-            Vertex commonB;
-            //if (firstRealCommonVertex.BlossomIndex == 0)    
-            //{
-            if (firstRealCommonVertex.Predecessor == null)
-            {
-                commonA = firstRealCommonVertex;
-                commonB = firstRealCommonVertex;
-            }
-            else
-            {
-                commonA = firstRealCommonVertex.Predecessor;//SCHWACHSINN
-                commonB = firstRealCommonVertex.Predecessor;
-            }
-
-            //}
-            //else
-            //{ //if firstRealCommonVertex is in a Blossom, the oddPath only has to be computet to this point
-
-            //}
-
-
-            //if (hashSetVertex.Contains(x))
-            //    commonA = x;
-            //else
-            //{
-            //    x = aVertex;
-            //    while (x.BlossomIndex != commonB.BlossomIndex)
-            //    {
-            //        x = x.MatchedVertex;
-            //        x = x.Predecessor;
-            //    }
-            //    commonA = x;
-            //}
-
-
-            //compute BlossomPath
-            var aPathUpwards = new List<Vertex>();
-            x = aVertex;
-            if (x.Predecessor != null && x != commonA)
-            {
-                aPathUpwards.Add(x);
-                foreach ( var o in x.OddPath)
-                {
-                    if (o != commonA)
-                        aPathUpwards.Add(o);
-                    else
-                        break;
-                }
-                //aPathUpwards.AddRange(x.OddPath);
-                x = x.OddPath.Last();
-                aPathUpwards.Remove(x);
-            }
-            while (x != commonA)
-            {
-                aPathUpwards.Add(x);
-                x = x.MatchedVertex;
-                aPathUpwards.Add(x);
-                x = x.Predecessor;
-            }
-            aPathUpwards.Add(x);
-
-            var bPathUpwards = new List<Vertex>();
-            x = bVertex;
-            if (x.Predecessor != null && x != commonB)
-            {
-                bPathUpwards.Add(x);
-                foreach (var o in x.OddPath)
-                {
-                    if (o != commonB)
-                        bPathUpwards.Add(o);
-                    else
-                        break;
-                }
-                //aPathUpwards.AddRange(x.OddPath);
-                x = x.OddPath.Last();
-                bPathUpwards.Remove(x);
-            }
-            while (x != commonB)
-            {
-                bPathUpwards.Add(x);
-                x = x.MatchedVertex;
-                bPathUpwards.Add(x);
-                x = x.Predecessor;
-            }
-            bPathUpwards.Add(x);
-            var aPathDownwards = aPathUpwards.ToList();
-            aPathDownwards.Reverse();
-            var bPathDownwards = bPathUpwards.ToList();
-            bPathDownwards.Reverse();
-
-
-            //set oddPaths
-            for (int i = 0; i < aPathDownwards.Count; i ++)
-            {
-                x = aPathDownwards[i];
-                if (x.Predecessor == null)
-                    continue;
-                x.OddPath = aPathDownwards.Skip(i + 1).Concat(bPathUpwards).ToList();
-                stack.Add(x);
-                plusTreeVertices.Add(x);
-            }
-            for (int i = 0; i < bPathDownwards.Count; i ++)
-            {
-                x = bPathDownwards[i];
-                if (x.Predecessor == null)
-                    continue;
-                x.OddPath = bPathDownwards.Skip(i + 1).Concat(aPathUpwards).ToList();
-                stack.Add(x);
-                plusTreeVertices.Add(x);
-            }
-
-            var blossomIndizesToReplace = aPathDownwards.Concat(bPathDownwards).Where(_ => _.BlossomIndex != 0).Select(_ => _.BlossomIndex).Distinct().ToHashSet();
-            blossomCount++;
-
-            foreach (var plusVertex in plusTreeVertices)
-            {
-                if (blossomIndizesToReplace.Contains(plusVertex.BlossomIndex))
-                {
-                    plusVertex.BlossomIndex = blossomCount;
-                    if (plusVertex.MatchedVertex != null)
-                        plusVertex.MatchedVertex.BlossomIndex = blossomCount;
-                }
-            }
-            foreach (var plusVertex in aPathDownwards)
-            {
-                plusVertex.BlossomIndex = blossomCount;
-            }
-            foreach (var plusVertex in bPathDownwards)
-            {
-                plusVertex.BlossomIndex = blossomCount;
-            }
-        }
         private static void CalculateAndSetOddPaths(Vertex aVertex, Vertex bVertex, List<Vertex> stack, List<Vertex> plusTreeVertices, ref int blossomCount)
         {
             //calculate common Vertex
             var root = plusTreeVertices[0];
             var rootPahtA = CalculateEvenPathToRoot(aVertex, root);
             var rootPahtB = CalculateEvenPathToRoot(bVertex, root);
-            var firstCommonVertex = rootPahtA.First(_ => rootPahtB.Contains(_));
 
-            //if both paths enter the Blossom of firstCommonVertex before firstCommonVertex, this becoms their privat enpoint of pathABUpwards
             int indexA;
             int indexB;
-            
-            if (firstCommonVertex.BlossomIndex != 0)
-            {
-                indexA = rootPahtA.Select(_ => _.BlossomIndex).ToList().IndexOf(firstCommonVertex.BlossomIndex); 
-                indexB = rootPahtB.Select(_ => _.BlossomIndex).ToList().IndexOf(firstCommonVertex.BlossomIndex); 
-            }
-            else
-            {
-            indexA = rootPahtA.IndexOf(firstCommonVertex);
-            indexB = rootPahtB.IndexOf(firstCommonVertex);
 
-            }
+            (indexA, indexB) = ComputeIndicesOfRootPaths(rootPahtA, rootPahtB);
+
+            
 
             //calculate path Upwards to firstCommonVertex;
-            var pathAUpwards = new List<Vertex>(indexA+1);
-            for(int i = 0; i< indexA+1; i++)
+            var pathAUpwards = new List<Vertex>(indexA + 1);
+            for (int i = 0; i < indexA + 1; i++)
             {
                 pathAUpwards.Add(rootPahtA[i]);
             }
-            var pathBUpwards = new List<Vertex>(indexB+1);
-            for (int i = 0; i < indexB+1; i++)
+            var pathBUpwards = new List<Vertex>(indexB + 1);
+            for (int i = 0; i < indexB + 1; i++)
             {
                 pathBUpwards.Add(rootPahtB[i]);
             }
 
-            var pathADownwards = pathAUpwards.ToList();
-            pathADownwards.Reverse();
-            var pathBDownwards = pathBUpwards.ToList();
-            pathBDownwards.Reverse();
-
-
-            //set oddPaths
-            for(int i = 1; i< pathADownwards.Count; i++)
+            for (int i = pathAUpwards.Count - 1; i >= 0; i--)
             {
-                var x = pathADownwards[i];
-                if (x.Predecessor == null || x.OddPath!=null)
+                var x = pathAUpwards[i];
+                if (x.Predecessor == null || x.OddPath != null)
                     continue;
-                x.OddPath = pathADownwards.Skip(i + 1).Concat(pathBUpwards).ToList();
+                x.OddPath = new List<Vertex>(pathAUpwards.Count - i - 1 + pathBUpwards.Count);
+                for (int j = i - 1; j >= 0; j--)
+                {
+                    x.OddPath.Add(pathAUpwards[j]);
+                }
+                for (int j = 0; j < pathBUpwards.Count; j++)
+                {
+                    x.OddPath.Add(pathBUpwards[j]);
+                }
                 if (!plusTreeVertices.Contains(x))
                 {
-                plusTreeVertices.Add(x);
-                stack.Add(x);
+                    plusTreeVertices.Add(x);
+                    stack.Add(x);
                 }
             }
 
-            for (int i = 1; i < pathBDownwards.Count; i++)
+            for (int i = pathBUpwards.Count-1; i>=0; i--)
             {
-                var x = pathBDownwards[i];
+                var x = pathBUpwards[i];
                 if (x.Predecessor == null || x.OddPath != null)
                     continue;
-                x.OddPath = pathBDownwards.Skip(i + 1).Concat(pathAUpwards).ToList();
+                x.OddPath = new List<Vertex>(pathBUpwards.Count - i - 1 + pathAUpwards.Count);
+                for (int j = i -1; j >= 0; j--)
+                {
+                    x.OddPath.Add(pathBUpwards[j]);
+                }
+                for (int j = 0; j < pathAUpwards.Count; j++)
+                {
+                    x.OddPath.Add(pathAUpwards[j]);
+                }
+
                 if (!plusTreeVertices.Contains(x))
                 {
                     plusTreeVertices.Add(x);
@@ -1036,26 +770,69 @@ namespace _3D_Matching
             }
 
 
-            var blossomIndizesToReplace = pathADownwards.Concat(pathBDownwards).Where(_ => _.BlossomIndex != 0).Select(_ => _.BlossomIndex).Distinct().ToHashSet();
-            blossomCount++;
-
-            foreach (var plusVertex in plusTreeVertices)
+            var blossomIndizesToReplace = new List<int>();
+            for(int i = 0; i < pathAUpwards.Count; i++)
             {
-                if (blossomIndizesToReplace.Contains(plusVertex.BlossomIndex))
+                if (pathAUpwards[i].BlossomIndex != 0)
+                    blossomIndizesToReplace.Add(pathAUpwards[i].BlossomIndex);
+            }
+            for (int i = 0; i < pathBUpwards.Count; i++)
+            {
+                if (pathBUpwards[i].BlossomIndex != 0)
+                    blossomIndizesToReplace.Add(pathBUpwards[i].BlossomIndex);
+            }
+            blossomCount++;
+            for(int i = 0; i<plusTreeVertices.Count;i++)
+            {
+                var plusVertex = plusTreeVertices[i];
+                for (int j = 0; j < blossomIndizesToReplace.Count; j++)
                 {
-                    plusVertex.BlossomIndex = blossomCount;
-                    if (plusVertex.MatchedVertex != null)
-                        plusVertex.MatchedVertex.BlossomIndex = blossomCount;
+                    if (blossomIndizesToReplace[j]==plusVertex.BlossomIndex)
+                    {
+                        plusVertex.BlossomIndex = blossomCount;
+                        if (plusVertex.MatchedVertex != null)
+                            plusVertex.MatchedVertex.BlossomIndex = blossomCount;
+                        break;
+                    }
                 }
             }
-            foreach (var plusVertex in pathADownwards)
+            for(int i = 0; i<pathAUpwards.Count;i++)
             {
-                plusVertex.BlossomIndex = blossomCount;
+                pathAUpwards[i].BlossomIndex = blossomCount;
             }
-            foreach (var plusVertex in pathBDownwards)
+
+            for(int i = 0; i<pathBUpwards.Count;i++)
             {
-                plusVertex.BlossomIndex = blossomCount;
+                pathBUpwards[i].BlossomIndex = blossomCount;
             }
+        }
+
+        private static (int indexA,int indexB) ComputeIndicesOfRootPaths(List<Vertex> rootPahtA, List<Vertex> rootPahtB)
+        {
+            for (int i = 0; i < rootPahtA.Count; i++)
+            {
+                for (int j = 0; j < rootPahtB.Count; j++)
+                {
+                    if (rootPahtA[i] == rootPahtB[j])
+                    {
+                        if (rootPahtA[i].BlossomIndex == 0)
+                        {
+                            return (i, j);
+                        }
+                        var blossomIndex = rootPahtA[i].BlossomIndex;
+                        while (i>0 && rootPahtA[i-1].BlossomIndex==blossomIndex)
+                        {
+                            i--;
+                        }
+                        while (j > 0 && rootPahtB[j - 1].BlossomIndex == blossomIndex)
+                        {
+                            j--;
+                        }
+                        return (i, j);
+                    }
+                }
+            }
+            return (-1, -1);
         }
 
         public void ResetTree(List<Vertex> plusTreeVertices)
@@ -1116,6 +893,66 @@ namespace _3D_Matching
         public Vertex plusVertex;
         public Edge linkingEdge;
         public int treeIndex;
+        private List<Vertex> _expandables;
+
+        public List<Vertex> Expandables()
+        {
+            if (this.Vertices.Count != 2)
+                throw new Exception("only two size edges are expandable");
+            var res = new List<Vertex>();
+            if (_expandables == null)
+            {
+                if (vertex0.Adj3Edges.Count < vertex1.Adj3Edges.Count)//determine which neighberhood should be searched 
+                {
+                    for(int i = 0; i<vertex0.Adj3Edges.Count; i++)
+                    {
+                        var edge3 = vertex0.Adj3Edges[i];
+                        if(edge3.vertex1 == vertex1)
+                        {
+                            res.Add(edge3.vertex2);
+                        }
+                        else if (edge3.vertex2 == vertex1)
+                        {
+                            if (edge3.vertex0 == vertex0)
+                            {
+                                res.Add(edge3.vertex1);
+                            }
+                            else
+                            {
+                                res.Add(edge3.vertex0);
+                            }
+                        }
+
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < vertex1.Adj3Edges.Count; i++)
+                    {
+                        var edge3 = vertex1.Adj3Edges[i];
+                        if (edge3.vertex1 == vertex0)
+                        {
+                            res.Add(edge3.vertex0);
+                        }
+                        else if (edge3.vertex0 == vertex0)
+                        {
+                            if (edge3.vertex1 == vertex1)
+                            {
+                                res.Add(edge3.vertex2);
+                            }
+                            else
+                            {
+                                res.Add(edge3.vertex1);
+                            }
+                        }
+
+                    }
+                }
+                _expandables = res;
+            }
+
+            return _expandables;
+        }
 
         public Vertex vertex0;
         public Vertex vertex1;
@@ -1158,8 +995,8 @@ namespace _3D_Matching
             {
                 if (vertex0 == edge.vertex0 && vertex1 == edge.vertex1 && vertex2==edge.vertex2)    //funktioniert nur wenn sortiert
                     return true;
-            } 
-                
+            }
+            return false;    
 
         }
         public override bool Equals(Object otherEdge)          //immer Knoten in Kante aufsteigend sortieren, sonst fehleranfällig!
@@ -1250,6 +1087,27 @@ namespace _3D_Matching
         public int Id;
         internal Vertex OriginalVertex0;
         internal Vertex OriginalVertex1;
+
+        public Edge Get2DEdgeBetween(Vertex oppositeVertex)
+        {
+            if (oppositeVertex.Id < Id)
+            {
+                for (int i = 0; i < Adj2Edges.Count; i++)
+                {
+                    if (Adj2Edges[i].vertex0 == oppositeVertex)
+                        return Adj2Edges[i];
+                }
+            }
+            else
+            {
+                for (int i = 0; i < Adj2Edges.Count; i++)
+                {
+                    if (Adj2Edges[i].vertex1 == oppositeVertex)
+                        return Adj2Edges[i];
+                }
+            }
+            return null;
+        }
 
         public bool Equals(Vertex otherObject)
         {

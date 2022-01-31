@@ -162,34 +162,82 @@ namespace _3D_Matching.Solvers
             else if (_type == "2DContractWithBlossom")
             {
                 _graph.InitializeFor2DMatchin();
-                res = _graph.GetMaximum2DMatching().maxMmatching;
-                var bestRes = res.ToList();
-
-                //test...............
-                //var ThreeDEdges = _graph.Edges.Where(_ => _.Vertices.Count == 3).ToList();
-                //var edgeIsUsed = new double[ThreeDEdges.Count];
-
-                //...............
-
+                _graph.ComputeMaximum2DMatching();
 
                 while (time.ElapsedMilliseconds < maxTime && iteration < maxIter)
                 {
                     iteration++;
 
-                    var contractedEdges = new List<Edge>();
-                    for (int i = 0; i < _additionalContractedEdges; i++)
+                    var matchingTupel = new List<(Vertex, Vertex)>();
+
+                    for(int i = 0; i<_graph.Vertices.Count; i++)
                     {
-                        var edge = res[_random.Next(res.Count)];
-                        if (edge.Vertices.Count != 2)
-                            continue;
-                        res.Remove(edge);
-                        contractedEdges.Add(edge);
-                        if (res.Count == 0)
-                            break;
+                        var activeVertex = _graph.Vertices[i];
+                        if (activeVertex.MatchedVertex != null && activeVertex.MatchedVertex.Id < activeVertex.Id)
+                        {
+                            matchingTupel.Add((activeVertex.MatchedVertex, activeVertex));
+                        }
                     }
 
-                    foreach (var edge3 in res.Where(_ => _.Vertices.Count == 3))
+                    var contractedEdges = new List<(Vertex, Vertex)>(matchingTupel.Count);
+                    var initialMatching = new List<(Vertex, Vertex)>(matchingTupel.Count);
+                    //for (int i = 0; i < _additionalContractedEdges; i++)
+                    //{
+                    //    var edge = matchingTupel[_random.Next(matchingTupel.Count)];
+                    //    if (edge.Item1.Id < 0)
+                    //    {
+                    //        //i--;
+                    //        continue;
+                    //    }
+                    //    matchingTupel.Remove(edge);
+                    //    contractedEdges.Add(edge);
+                    //    if (matchingTupel.Count == 0)
+                    //        break;
+                    //}
+                    for (int i = 0; i < matchingTupel.Count; i++)
                     {
+                        var tupleEdge = matchingTupel[i];
+                        if (tupleEdge.Item1.Id < 0)
+                            continue;
+                        if (tupleEdge.Item1.Get2DEdgeBetween(tupleEdge.Item2).Expandables().Count > 0)
+                        {
+                            contractedEdges.Add(tupleEdge);
+                        }
+                        else if(_random.NextDouble()<0.5)
+                        {
+                            initialMatching.Add(tupleEdge);
+                        }
+                    }
+                    //for(int i = contractedEdges.Count; i > _additionalContractedEdges; i--)
+                    //{
+                    //    contractedEdges.RemoveAt(_random.Next(contractedEdges.Count));
+                    //}
+                    //foreach (var edge in contractedEdges)
+                    //int z = 0;
+                    //while (z < contractedEdges.Count)
+                    //{
+                    //    var edge = contractedEdges[z];
+                    //    var real2Edge = edge.Item1.Adj2Edges.Where(_ => _.Contains(edge.Item2)).First();
+                    //    if (real2Edge.Expandables().Count() == 0)
+                    //    {
+                    //        contractedEdges.RemoveAt(z);
+                    //    }
+                    //    else
+                    //    {
+                    //        z++;
+                    //    }
+                    //}
+                    //Console.WriteLine(contractedEdges.Count);
+
+                    foreach (var edge3Strich in matchingTupel.Where(_ => _.Item1.Id < 0))
+                    {
+                        var edge3 = new Edge(new List<Vertex> { edge3Strich.Item1.OriginalVertex0, edge3Strich.Item1.OriginalVertex1, edge3Strich.Item2 });
+                        if (_random.NextDouble() < 0.75)
+                        {
+                            contractedEdges.Add((edge3Strich.Item1.OriginalVertex0, edge3Strich.Item1.OriginalVertex1));
+                            continue;
+                        }
+
                         int a = 0;
                         int b = 1;
                         int c = 2;
@@ -199,40 +247,33 @@ namespace _3D_Matching.Solvers
                             b = (_random.Next(1, 3) + a) % 3;
                             c = 3 - a - b;
                         }
-
-                        if (edge3.Vertices[a].Adj2Edges.Contains(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[b] })))
+                        if (edge3.Vertices[a].Get2DEdgeBetween(edge3.Vertices[b])!=null)
                         {
-                            contractedEdges.Add(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[b] }));
+                            contractedEdges.Add((edge3.Vertices[a], edge3.Vertices[b]));
                             continue;
                         }
-                        if (edge3.Vertices[a].Adj2Edges.Contains(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[c] })))
+                        if (edge3.Vertices[a].Get2DEdgeBetween(edge3.Vertices[c]) != null)
                         {
-                            contractedEdges.Add(new Edge(new List<Vertex> { edge3.Vertices[a], edge3.Vertices[c] }));
+                            contractedEdges.Add((edge3.Vertices[a], edge3.Vertices[c]));
                             continue;
                         }
-                        if (edge3.Vertices[c].Adj2Edges.Contains(new Edge(new List<Vertex> { edge3.Vertices[c], edge3.Vertices[b] })))
+                        if (edge3.Vertices[c].Get2DEdgeBetween(edge3.Vertices[b]) != null)
                         {
-                            contractedEdges.Add(new Edge(new List<Vertex> { edge3.Vertices[c], edge3.Vertices[b] }));
+                            contractedEdges.Add((edge3.Vertices[c], edge3.Vertices[b]));
                             continue;
                         }
 
                     }
 
-                    _graph.InitializeFor2DMatchin(initialMatching: res.Where(_ => _.Vertices.Count == 2).ToList(), contractingEdges: contractedEdges);
-                    res = _graph.GetMaximum2DMatching().maxMmatching;
+                    _graph.InitializeFor2DMatchin(initialMatching: initialMatching, contractingEdges: contractedEdges);
+                    //res = _graph.GetMaximum2DMatching().maxMmatching;
+                    _graph.ComputeMaximum2DMatching();
 
-                    valuePerIteration.Add(res.Count + 0.0);
+                    //valuePerIteration.Add(res.Count + 0.0);
 
-                    if (res.Count <= bestRes.Count)
-                    {
-                        bestRes = res.ToList();
-                    }
-                    else 
-                    {
-                        res = bestRes.ToList();
-                    }
+
                 }
-                res = bestRes;
+                res = _graph.GetMaximum2DMatching().maxMmatching;
 
                 //Console.WriteLine(edgeIsUsed.Sum() / ThreeDEdges.Count);
                 //var MIP = new ORTS();
@@ -250,19 +291,28 @@ namespace _3D_Matching.Solvers
                 {
                     iteration++;
 
+                    //Console.WriteLine(_graph.ContractedVertices.Where(_ => _.MatchedVertex != null).Count());
+
 
                     for (int i = 0; i < _graph.ContractedVertices.Count; i++)
                     {
                         var contractedVertex = _graph.ContractedVertices[i];
                         if (contractedVertex.MatchedVertex == null)
                         {//Expand contracted Vertices, which are not Matched
+                            //if (_random.NextDouble() < 0.2)
+                            //    continue;
+
                             DoExpand(contractedVertex);
                         }
                         else
                         {//switch contracted edge of 3D edge
-                            if (_random.NextDouble() > 0.5)
+                            if (_random.NextDouble() > 0.2)
+                            {
+                                contractedVertex.MatchedVertex.MatchedVertex = null;
+                                contractedVertex.MatchedVertex = null;
                                 continue;
-                            if (contractedVertex.MatchedVertex.Adj3Edges.Contains(new Edge(new List<Vertex> { contractedVertex.OriginalVertex0, contractedVertex.MatchedVertex })) && _random.NextDouble() > 0.5)
+                            }
+                            if (contractedVertex.MatchedVertex.Adj2Edges.Contains(new Edge(new List<Vertex> { contractedVertex.OriginalVertex0, contractedVertex.MatchedVertex })) && _random.NextDouble() > 0.5)
                             {
                                 var newNotContracted = contractedVertex.OriginalVertex1;
                                 var newContracted = contractedVertex.MatchedVertex;
@@ -270,11 +320,11 @@ namespace _3D_Matching.Solvers
                                 DoExpand(contractedVertex);
                                 DoContract(contractedVertex.OriginalVertex0, contractedVertex.MatchedVertex);
 
-                                newContracted.MatchedVertex = newNotContracted.ContractedVertex;
-                                newNotContracted.ContractedVertex.MatchedVertex = newContracted;
+                                newNotContracted.MatchedVertex = newContracted.ContractedVertex;
+                                newContracted.ContractedVertex.MatchedVertex = newNotContracted;
 
                             }
-                            else if (contractedVertex.MatchedVertex.Adj3Edges.Contains(new Edge(new List<Vertex> { contractedVertex.OriginalVertex1, contractedVertex.MatchedVertex })))
+                            else if (contractedVertex.MatchedVertex.Adj2Edges.Contains(new Edge(new List<Vertex> { contractedVertex.OriginalVertex1, contractedVertex.MatchedVertex })))
                             {
                                 var newNotContracted = contractedVertex.OriginalVertex0;
                                 var newContracted = contractedVertex.MatchedVertex;
@@ -285,7 +335,7 @@ namespace _3D_Matching.Solvers
                                 newNotContracted.MatchedVertex = newContracted.ContractedVertex;
                                 newContracted.ContractedVertex.MatchedVertex = newNotContracted;
                             }
-                            else if (contractedVertex.MatchedVertex.Adj3Edges.Contains(new Edge(new List<Vertex> { contractedVertex.OriginalVertex0, contractedVertex.MatchedVertex })))
+                            else if (contractedVertex.MatchedVertex.Adj2Edges.Contains(new Edge(new List<Vertex> { contractedVertex.OriginalVertex0, contractedVertex.MatchedVertex })))
                             {
                                 var newNotContracted = contractedVertex.OriginalVertex1;
                                 var newContracted = contractedVertex.MatchedVertex;
@@ -293,23 +343,52 @@ namespace _3D_Matching.Solvers
                                 DoExpand(contractedVertex);
                                 DoContract(contractedVertex.OriginalVertex0, contractedVertex.MatchedVertex);
 
-                                newContracted.MatchedVertex = newNotContracted.ContractedVertex;
-                                newNotContracted.ContractedVertex.MatchedVertex = newContracted;
+                                newNotContracted.MatchedVertex = newContracted.ContractedVertex;
+                                newContracted.ContractedVertex.MatchedVertex = newNotContracted;
 
                             }
+                            contractedVertex.MatchedVertex.MatchedVertex = null;
+                            contractedVertex.MatchedVertex = null;
                         }
                     }
 
                     //contract random ...% of the remaining vertices
+                    int newContractedCount = 0;
                     for (int i = 0; i < _graph.Vertices.Count; i++)
                     {
                         var vertex = _graph.Vertices[i];
-                        if (vertex.IsContracted || vertex.MatchedVertex == null || vertex.MatchedVertex.Id<0)
+                        if (vertex.IsContracted || vertex.MatchedVertex == null || vertex.MatchedVertex.Id<vertex.Id)
                             continue;
-                        if (_random.NextDouble() > 0.1)
+                        if (_random.NextDouble() < 0.9)//1.0/_additionalContractedEdges)
                             continue;
+                        newContractedCount++;
                         DoContract(vertex, vertex.MatchedVertex);
+                        if (newContractedCount > 30)
+                            break;
                     }
+                    if (iteration % 100 == 0)
+                        Console.WriteLine(_graph.ContractedVertices.Count);
+                    //var test = _graph.GetMaximum2DMatching();
+                    //var coveredVertices = new bool[_graph.Vertices.Count];
+
+                    //foreach (var vertex in _graph.Vertices)
+                    //{
+                    //    vertex.NeighboursFor2DMatching = vertex.NeighboursFor2DMatching.OrderBy(_ => _.Id ).ToList();
+                    //    if (vertex.MatchedVertex == null)
+                    //        continue;
+                    //    //vertex.MatchedVertex.MatchedVertex = null;
+                    //    //vertex.MatchedVertex = null;
+                    //}
+                    //if (iteration == 100)
+                    //{
+                    //    foreach (var v in _graph.Vertices)
+                    //    {
+                    //        if (v.NeighboursFor2DMatching.Count <= 3)
+                    //            continue;
+                    //        Console.WriteLine(String.Join(" ", v.NeighboursFor2DMatching.Select(_ => _.Id)));
+                    //    }
+                    //}
+
 
                     _graph.ComputeMaximum2DMatching();
                 }
@@ -321,6 +400,42 @@ namespace _3D_Matching.Solvers
                 //var bound = MIP.Run(parameters).cover.Count;
                 //Plot.CreateFigure(valuePerIteration, plottype: "f", xLable: "Iterations", yLable: "Matching Size", title: "2DBased history of size ( ca 300 iterations/second", horizontal: "" + bound, show: false);
                 //Plot.CreateFigure(edgeIsUsed, xLable: "Iterations", yLable: "Matching Size", title: "2DBased history of size ( ca 300 iterations/second", show: false);
+            }
+            else if (_type == "2DContractHyprid")
+            {
+                _graph.SetVertexAdjEdges();
+                var potentialContracionEdges = _graph.Edges.Where(_ => _.Vertices.Count == 2).ToList();
+                foreach (var edge in potentialContracionEdges)
+                {
+                    edge.Expandables();
+
+                }
+
+                potentialContracionEdges = potentialContracionEdges.OrderBy(_ => -_.Expandables().Count +10*_random.NextDouble()).Where(_ => _.Expandables().Count > 1).ToList();
+
+                //potentialContracionEdges = potentialContracionEdges.OrderBy(_ => _random.NextDouble()).ToList();
+                var alreadyContractdVertices = new int[_graph.Vertices.Count];
+                var contractionEdges = new List<(Vertex, Vertex)>();
+                for (int i = 0; i < potentialContracionEdges.Count; i++)
+                {
+                    var edge = potentialContracionEdges[i];
+                    if (alreadyContractdVertices[edge.vertex0.Id]>2 || alreadyContractdVertices[edge.vertex1.Id]>2)
+                        continue;
+                    //if (_random.NextDouble() < 0.5)
+                    //    continue;
+                    alreadyContractdVertices[edge.vertex0.Id] = 10;
+                    alreadyContractdVertices[edge.vertex1.Id] = 10;
+                    foreach (var v in edge.Expandables())
+                    {
+                        alreadyContractdVertices[v.Id]++;
+                    }
+
+                    contractionEdges.Add((edge.vertex0, edge.vertex1));
+                    if (contractionEdges.Count > 40)
+                        break;
+                }
+                _graph.InitializeFor2DMatchin(contractingEdges: contractionEdges);
+                res = _graph.GetMaximum2DMatching().maxMmatching;
             }
             return (res, iteration);
         }
@@ -387,18 +502,24 @@ namespace _3D_Matching.Solvers
                 var edge = vertexB.Adj3Edges[k];
                 if (edge.Vertices[0].ContractedWith == edge.Vertices[1] && edge.Vertices[2].IsContracted == false)
                 {
-                    edge.Vertices[2].NeighboursFor2DMatching.Add(newContractedVertex);
-                    newContractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[2]);
+                    //edge.Vertices[2].NeighboursFor2DMatching.Add(newContractedVertex);
+                    //newContractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[2]);
+                    edge.Vertices[2].NeighboursFor2DMatching.Insert(0,newContractedVertex);
+                    newContractedVertex.NeighboursFor2DMatching.Insert(0,edge.Vertices[2]);
                 }
                 else if (edge.Vertices[2].ContractedWith == edge.Vertices[1] && edge.Vertices[0].IsContracted == false)
                 {
-                    edge.Vertices[0].NeighboursFor2DMatching.Add(newContractedVertex);
-                    newContractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[0]);
+                    //edge.Vertices[0].NeighboursFor2DMatching.Add(newContractedVertex);
+                    //newContractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[0]);
+                    edge.Vertices[0].NeighboursFor2DMatching.Insert(0,newContractedVertex);
+                    newContractedVertex.NeighboursFor2DMatching.Insert(0,edge.Vertices[0]);
                 }
                 else if (edge.Vertices[0].ContractedWith == edge.Vertices[2] && edge.Vertices[1].IsContracted == false)
                 {
-                    edge.Vertices[1].NeighboursFor2DMatching.Add(newContractedVertex);
-                    newContractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[1]);
+                    //edge.Vertices[1].NeighboursFor2DMatching.Add(newContractedVertex);
+                    //newContractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[1]);
+                    edge.Vertices[1].NeighboursFor2DMatching.Insert(0,newContractedVertex);
+                    newContractedVertex.NeighboursFor2DMatching.Insert(0,edge.Vertices[1]);
                 }
 
             }
