@@ -204,13 +204,13 @@ namespace _3D_Matching.Solvers
                         var edge3Strich = matchingTupel[i];
                         if (edge3Strich.Item1.Id >= 0)
                             continue;
-                        var edge3 = new Edge(new List<Vertex> { edge3Strich.Item1.OriginalVertex0, edge3Strich.Item1.OriginalVertex1, edge3Strich.Item2 });
                         if (_random.NextDouble() < 0.75)
                         {
                             contractedEdges.Add((edge3Strich.Item1.OriginalVertex0, edge3Strich.Item1.OriginalVertex1));
                             continue;
                         }
-
+                        //var edge3 = new Edge(new List<Vertex> { edge3Strich.Item1.OriginalVertex0, edge3Strich.Item1.OriginalVertex1, edge3Strich.Item2 });
+                        var edge3 = new Vertex[] { edge3Strich.Item1.OriginalVertex0, edge3Strich.Item1.OriginalVertex1, edge3Strich.Item2 };
                         int a = 0;
                         int b = 1;
                         int c = 2;
@@ -220,19 +220,19 @@ namespace _3D_Matching.Solvers
                             b = (_random.Next(1, 3) + a) % 3;
                             c = 3 - a - b;
                         }
-                        if (edge3.Vertices[a].Get2DEdgeBetween(edge3.Vertices[b])!=null)
+                        if (edge3[a].Get2DEdgeBetween(edge3[b])!=null)
                         {
-                            contractedEdges.Add((edge3.Vertices[a], edge3.Vertices[b]));
+                            contractedEdges.Add((edge3[a], edge3[b]));
                             continue;
                         }
-                        if (edge3.Vertices[a].Get2DEdgeBetween(edge3.Vertices[c]) != null)
+                        if (edge3[a].Get2DEdgeBetween(edge3[c]) != null)
                         {
-                            contractedEdges.Add((edge3.Vertices[a], edge3.Vertices[c]));
+                            contractedEdges.Add((edge3[a], edge3[c]));
                             continue;
                         }
-                        if (edge3.Vertices[c].Get2DEdgeBetween(edge3.Vertices[b]) != null)
+                        if (edge3[c].Get2DEdgeBetween(edge3[b]) != null)
                         {
-                            contractedEdges.Add((edge3.Vertices[c], edge3.Vertices[b]));
+                            contractedEdges.Add((edge3[c], edge3[b]));
                             continue;
                         }
 
