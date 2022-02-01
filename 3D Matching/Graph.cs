@@ -403,85 +403,8 @@ namespace _3D_Matching
 
         public (List<Edge> maxMmatching, List<Vertex> uncoveredVertices) GetMaximum2DMatching()
         {
-            List<Vertex> potentialRoots;
-            if (ContractedVertices == null)
-                potentialRoots = Vertices.Where(_ => _.MatchedVertex == null).ToList();
-            else
-                potentialRoots = Vertices.Concat(ContractedVertices).Where(_ => _.MatchedVertex == null && !_.IsContracted)/*.OrderBy(_=>_random.Next())*/.ToList();
-            while (potentialRoots.Count > 0)
-            {
-                var newRoot = potentialRoots.First();
-                newRoot.IsInTree = true;
-                var plusTreeVertices = new List<Vertex>();
-                plusTreeVertices.Add(newRoot);
-                potentialRoots.RemoveAt(0);
-                var stack = new List<Vertex>();
-                stack.Add(newRoot);
-
-                var augmentationHasBeenPerformed = false;
-                int blossomCount = 0;
-
-                augmentationHasBeenPerformed = TryAndDoAugmentation(/*potentialRoots,*/ newRoot, plusTreeVertices, newRoot);
-
-                while (!augmentationHasBeenPerformed && stack.Count > 0)
-                {
-                    var activeVertex = stack.First();
-                    stack.Remove(activeVertex);
-
-                    for (int neighbourIndex = 0; neighbourIndex < activeVertex.NeighboursFor2DMatching.Count; neighbourIndex++)
-                    {
-                        var activeNeighbour = activeVertex.NeighboursFor2DMatching[neighbourIndex];
-                        if (activeNeighbour.IsContracted)
-                            continue;
-                        if (activeNeighbour.IsInTree && (activeNeighbour.BlossomIndex != activeVertex.BlossomIndex || activeNeighbour.BlossomIndex + activeVertex.BlossomIndex == 0) && (activeNeighbour.Predecessor == null || activeNeighbour.OddPath != null))
-                        { // do blossom building.                         => no blossominternal edge                                                                                            =>is of type plus               => is blossom of tpye plus          
-                            var oldStackCount = stack.Count;
-                            CalculateAndSetOddPaths(activeVertex, activeNeighbour, stack, plusTreeVertices, ref blossomCount);
-                            
-                            for (int i = oldStackCount; i < stack.Count; i++)
-                            {
-                                var v = stack[i];
-                                augmentationHasBeenPerformed = TryAndDoAugmentation(/*potentialRoots,*/ newRoot, plusTreeVertices, v);
-                                if (augmentationHasBeenPerformed)
-                                {
-                                    break;
-                                }
-                            }
-                            if (augmentationHasBeenPerformed)
-                                break;
-
-                        }
-                        else if (activeNeighbour.IsInTree == false)
-                        {
-                            if (activeNeighbour.MatchedVertex != null)
-                            {// grow
-                                var newPlusVertex = activeNeighbour.MatchedVertex;
-                                stack.Add(newPlusVertex);
-                                activeNeighbour.Predecessor = activeVertex;
-                                plusTreeVertices.Add(newPlusVertex);
-
-                                newPlusVertex.IsInTree = true;
-                                activeNeighbour.IsInTree = true;
-
-                                augmentationHasBeenPerformed = TryAndDoAugmentation(/*potentialRoots,*/ newRoot, plusTreeVertices, newPlusVertex);
-                                if (augmentationHasBeenPerformed)
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                }
-                if (!augmentationHasBeenPerformed)
-                {
-                    augmentationHasBeenPerformed = PartialAugment(/*potentialRoots,*/ newRoot, plusTreeVertices, augmentationHasBeenPerformed);
-                }
-            }
-            List<Edge> resMatching;
-            List<Vertex> uncoveredVertices;
-            ReconstructMatching(out resMatching, out uncoveredVertices);
-            return (resMatching, uncoveredVertices);
+            ComputeMaximum2DMatching();
+            return ReconstructMatching();
         }
 
         public void ComputeMaximum2DMatching()
@@ -505,23 +428,19 @@ namespace _3D_Matching
                 if (newRoot.IsContracted || newRoot.MatchedVertex!=null)
                     continue;
 
-                //newRoot.Label = 1;
                 newRoot.IsInTree = true;
                 var plusTreeVertices = new List<Vertex>(20);
                 plusTreeVertices.Add(newRoot);
 
-                var stack = new List<Vertex>(20);
-                stack.Add(newRoot);
 
-                var augmentationHasBeenPerformed = false;
                 int blossomCount = 0;
 
-                augmentationHasBeenPerformed = TryAndDoAugmentation(/*potentialRoots,*/ newRoot, plusTreeVertices, newRoot);
+                bool augmentationHasBeenPerformed = TryAndDoAugmentation( newRoot, plusTreeVertices, newRoot);
 
                 var stackIndex = 0;
-                while (!augmentationHasBeenPerformed &&  stackIndex<stack.Count/*stack.Count > 0*/)
+                while (!augmentationHasBeenPerformed &&  stackIndex< plusTreeVertices.Count )
                 {
-                    var activeVertex = stack[stackIndex];
+                    var activeVertex = plusTreeVertices[stackIndex];
                     stackIndex++;
 
                     for (int neighbourIndex = 0; neighbourIndex < activeVertex.NeighboursFor2DMatching.Count; neighbourIndex++)
@@ -531,13 +450,13 @@ namespace _3D_Matching
                             continue;
                         if (activeNeighbour.IsInTree && (activeNeighbour.BlossomIndex != activeVertex.BlossomIndex || activeNeighbour.BlossomIndex + activeVertex.BlossomIndex == 0) && (activeNeighbour.Predecessor == null || activeNeighbour.OddPath != null))
                         { // do blossom building.                         => no blossominternal edge                                                                                            =>is of type plus               => is blossom of tpye plus          
-                            var oldStackCount = stack.Count;
-                            CalculateAndSetOddPaths(activeVertex, activeNeighbour, stack, plusTreeVertices, ref blossomCount);
+                            var oldStackCount = plusTreeVertices.Count;
+                            CalculateAndSetOddPaths(activeVertex, activeNeighbour, plusTreeVertices, ref blossomCount);
 
-                            for (int i = oldStackCount; i < stack.Count; i++)
+                            for (int i = oldStackCount; i < plusTreeVertices.Count; i++)
                             {
-                                var v = stack[i];
-                                augmentationHasBeenPerformed = TryAndDoAugmentation(/*potentialRoots,*/ newRoot, plusTreeVertices, v);
+                                var v = plusTreeVertices[i];
+                                augmentationHasBeenPerformed = TryAndDoAugmentation(newRoot, plusTreeVertices, v);
                                 if (augmentationHasBeenPerformed)
                                 {
                                     break;
@@ -552,14 +471,13 @@ namespace _3D_Matching
                             if (activeNeighbour.MatchedVertex != null)
                             {// grow
                                 var newPlusVertex = activeNeighbour.MatchedVertex;
-                                stack.Add(newPlusVertex);
                                 activeNeighbour.Predecessor = activeVertex;
                                 plusTreeVertices.Add(newPlusVertex);
 
                                 newPlusVertex.IsInTree = true;
                                 activeNeighbour.IsInTree = true;
 
-                                augmentationHasBeenPerformed = TryAndDoAugmentation(/*potentialRoots,*/ newRoot, plusTreeVertices, newPlusVertex);
+                                augmentationHasBeenPerformed = TryAndDoAugmentation( newRoot, plusTreeVertices, newPlusVertex);
                                 if (augmentationHasBeenPerformed)
                                 {
                                     break;
@@ -571,12 +489,12 @@ namespace _3D_Matching
                 }
                 if (!augmentationHasBeenPerformed)
                 {
-                    augmentationHasBeenPerformed = PartialAugment(/*potentialRoots,*/ newRoot, plusTreeVertices, augmentationHasBeenPerformed);
+                    augmentationHasBeenPerformed = PartialAugment( newRoot, plusTreeVertices, augmentationHasBeenPerformed);
                 }
             }
         }
 
-        private bool TryAndDoAugmentation(/*List<Vertex> potentialRoots,*/ Vertex newRoot, List<Vertex> plusTreeVertices, Vertex activeVertex)
+        private bool TryAndDoAugmentation(Vertex newRoot, List<Vertex> plusTreeVertices, Vertex activeVertex)
         {
             bool augmentationHasBeenPerformed = false;
             for (int i = 0; i < activeVertex.NeighboursFor2DMatching.Count; i++)
@@ -584,9 +502,7 @@ namespace _3D_Matching
                 var neighbour = activeVertex.NeighboursFor2DMatching[i];
                 if (neighbour.MatchedVertex == null && neighbour != newRoot)
                 {
-                    //if (neighbour.IsContracted)
-                    //    ;
-                    Augment(/*potentialRoots,*/ plusTreeVertices, activeVertex, neighbour);
+                    Augment(plusTreeVertices, activeVertex, neighbour);
                     augmentationHasBeenPerformed = true;
                     break;
                 }
@@ -595,11 +511,10 @@ namespace _3D_Matching
             return augmentationHasBeenPerformed;
         }
 
-        private void ReconstructMatching(out List<Edge> resMatching, out List<Vertex> uncoveredVertices)
+        private (List<Edge> matching, List<Vertex> unmatchedVertices) ReconstructMatching()
         {
-            resMatching = new List<Edge>(Vertices.Count / 2);
-            uncoveredVertices = new List<Vertex>();
-            //foreach (var vertex in Vertices.Concat(ContractedVertices).Where(_ => !_.IsContracted))
+            var resMatching = new List<Edge>(Vertices.Count / 2);
+            var uncoveredVertices = new List<Vertex>();
             for (int i = 0; i < Vertices.Count; i++)
             {
                 var vertex = Vertices[i];
@@ -634,11 +549,11 @@ namespace _3D_Matching
                     }
                 }
             }
+            return (resMatching, uncoveredVertices);
         }
 
-        private bool PartialAugment(/*List<Vertex> potentialRoots,*/ Vertex newRoot, List<Vertex> plusTreeVertices, bool augmentationHasBeenPerformed)
+        private bool PartialAugment(Vertex newRoot, List<Vertex> plusTreeVertices, bool augmentationHasBeenPerformed)
         {
-            //foreach (var x in plusTreeVertices)     //save as bool at vertex if allowed as singleton
             for(int i = 0; i< plusTreeVertices.Count;i++)
             {
                 var x = plusTreeVertices[i];
@@ -660,7 +575,7 @@ namespace _3D_Matching
                     }
 
                     x.MatchedVertex = null;
-                    Augment(/*potentialRoots,*/ plusTreeVertices, activeVertex, activeNeighbour);
+                    Augment( plusTreeVertices, activeVertex, activeNeighbour);
                     augmentationHasBeenPerformed = true;
                     break;
                 }
@@ -671,10 +586,9 @@ namespace _3D_Matching
         }
 
 
-        private void Augment(/*List<Vertex> potentialRoots,*/ List<Vertex> plusTreeVertices, Vertex activeVertex, Vertex activeNeighbour)
+        private void Augment(List<Vertex> plusTreeVertices, Vertex activeVertex, Vertex activeNeighbour)
         {
             activeNeighbour.Predecessor = activeVertex;
-            //potentialRoots.Remove(activeNeighbour);
             (Vertex, List<Vertex>) upwardsInfo = (activeNeighbour, null);
             while (upwardsInfo != (null, null))
             {
@@ -684,10 +598,10 @@ namespace _3D_Matching
             ResetTree(plusTreeVertices);
         }
         public static List<Vertex> CalculateEvenPathToRoot(Vertex activeVertex, Vertex root)
-        { //only unse on vertices which are in plusTreeVertices
+        {
             var evenPath = new List<Vertex>();
             (Vertex, List<Vertex>) upwardsInfo = (activeVertex, activeVertex.OddPath);
-            while (upwardsInfo.Item1!= root)//upwardsInfo != (null, null))
+            while (upwardsInfo.Item1!= root)
             {
                 upwardsInfo = GoOneStepUpwards(upwardsInfo, evenPath);
             }
@@ -721,7 +635,7 @@ namespace _3D_Matching
             }
             return newUpwardsInfo;
         }
-        private static void CalculateAndSetOddPaths(Vertex aVertex, Vertex bVertex, List<Vertex> stack, List<Vertex> plusTreeVertices, ref int blossomCount)
+        private static void CalculateAndSetOddPaths(Vertex aVertex, Vertex bVertex, List<Vertex> plusTreeVertices, ref int blossomCount)
         {
             //calculate common Vertex
             var root = plusTreeVertices[0];
@@ -756,7 +670,6 @@ namespace _3D_Matching
                 if(x.OddPath==null && x.Predecessor != null)
                 {
                     plusTreeVertices.Add(x);
-                    stack.Add(x);
                 }
                 x.OddPath = new List<Vertex>(pathAUpwards.Count - i - 1 + pathBUpwards.Count);
                 for (int j = i - 1; j >= 0; j--)
@@ -767,11 +680,7 @@ namespace _3D_Matching
                 {
                     x.OddPath.Add(pathBUpwards[j]);
                 }
-                //if (!plusTreeVertices.Contains(x))
-                //{
-                //    plusTreeVertices.Add(x);
-                //    stack.Add(x);
-                //}
+
             }
 
             for (int i = pathBUpwards.Count-1; i>=0; i--)
@@ -782,7 +691,6 @@ namespace _3D_Matching
                 if (x.OddPath == null && x.Predecessor != null)
                 {
                     plusTreeVertices.Add(x);
-                    stack.Add(x);
                 }
                 x.OddPath = new List<Vertex>(pathBUpwards.Count - i - 1 + pathAUpwards.Count);
                 for (int j = i -1; j >= 0; j--)
@@ -794,11 +702,6 @@ namespace _3D_Matching
                     x.OddPath.Add(pathAUpwards[j]);
                 }
 
-                //if (!plusTreeVertices.Contains(x))
-                //{
-                //    plusTreeVertices.Add(x);
-                //    stack.Add(x);
-                //}
             }
 
 
