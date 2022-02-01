@@ -309,9 +309,8 @@ namespace _3D_Matching
             {
                 for (int i = 0; i < contractingEdges.Count; i++)
                 {
-                    var contractingEdge = contractingEdges[i];
-                    var vertex0 = contractingEdge.Item1;
-                    var vertex1 = contractingEdge.Item2;
+                    var vertex0 = contractingEdges[i].Item1;
+                    var vertex1 = contractingEdges[i].Item2;
 
                     vertex0.IsContracted = true;
                     vertex1.IsContracted = true;
@@ -324,8 +323,8 @@ namespace _3D_Matching
                 vertex.MatchedVertex = null;
                 vertex.IsInTree = false;
                 vertex.OddPath = null;
-                vertex.ContractedVertex = null;
-                vertex.ContractedWith = null;
+                //vertex.ContractedVertex = null;
+                //vertex.ContractedWith = null;
                 
                 if (vertex.IsContracted)
                     continue;
@@ -398,32 +397,6 @@ namespace _3D_Matching
                         expandableVertex.NeighboursFor2DMatching.Add(contractedVertex);
                         contractedVertex.NeighboursFor2DMatching.Add(expandableVertex);
                     }
-                    //if (vertex0.Adj3Edges.Count > vertex1.Adj3Edges.Count)
-                    //{
-                    //    var tmp = vertex0;
-                    //    vertex0 = vertex1;
-                    //    vertex1 = tmp;
-                    //}
-                    //for (int k = 0; k < vertex0.Adj3Edges.Count; k++)
-                    //{
-                    //    var edge = vertex0.Adj3Edges[k];
-                    //    if (((edge.Vertices[0] == vertex0 && edge.Vertices[1] == vertex1) || (edge.Vertices[1] == vertex0 && edge.Vertices[0] == vertex1)) && edge.Vertices[2].IsContracted == false)
-                    //    {
-                    //        edge.Vertices[2].NeighboursFor2DMatching.Add(contractedVertex);
-                    //        contractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[2]);
-                    //    }
-                    //    else if (((edge.Vertices[2] == vertex0 && edge.Vertices[1] == vertex1) || (edge.Vertices[1] == vertex0 && edge.Vertices[2] == vertex1)) && edge.Vertices[0].IsContracted == false)
-                    //    {
-                    //        edge.Vertices[0].NeighboursFor2DMatching.Add(contractedVertex);
-                    //        contractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[0]);
-                    //    }
-                    //    else if (((edge.Vertices[2] == vertex0 && edge.Vertices[0] == vertex1) || (edge.Vertices[0] == vertex0 && edge.Vertices[2] == vertex1)) && edge.Vertices[1].IsContracted == false)
-                    //    {
-                    //        edge.Vertices[1].NeighboursFor2DMatching.Add(contractedVertex);
-                    //        contractedVertex.NeighboursFor2DMatching.Add(edge.Vertices[1]);
-                    //    }
-
-                            //}
                 }
             }
         }
@@ -438,7 +411,6 @@ namespace _3D_Matching
             while (potentialRoots.Count > 0)
             {
                 var newRoot = potentialRoots.First();
-                newRoot.Label = 1;
                 newRoot.IsInTree = true;
                 var plusTreeVertices = new List<Vertex>();
                 plusTreeVertices.Add(newRoot);
@@ -484,8 +456,6 @@ namespace _3D_Matching
                             if (activeNeighbour.MatchedVertex != null)
                             {// grow
                                 var newPlusVertex = activeNeighbour.MatchedVertex;
-                                activeNeighbour.Label = activeVertex.Label * -1;
-                                newPlusVertex.Label = activeVertex.Label;
                                 stack.Add(newPlusVertex);
                                 activeNeighbour.Predecessor = activeVertex;
                                 plusTreeVertices.Add(newPlusVertex);
@@ -535,7 +505,7 @@ namespace _3D_Matching
                 if (newRoot.IsContracted || newRoot.MatchedVertex!=null)
                     continue;
 
-                newRoot.Label = 1;
+                //newRoot.Label = 1;
                 newRoot.IsInTree = true;
                 var plusTreeVertices = new List<Vertex>(20);
                 plusTreeVertices.Add(newRoot);
@@ -553,7 +523,6 @@ namespace _3D_Matching
                 {
                     var activeVertex = stack[stackIndex];
                     stackIndex++;
-                    //stack.Remove(activeVertex);
 
                     for (int neighbourIndex = 0; neighbourIndex < activeVertex.NeighboursFor2DMatching.Count; neighbourIndex++)
                     {
@@ -583,8 +552,6 @@ namespace _3D_Matching
                             if (activeNeighbour.MatchedVertex != null)
                             {// grow
                                 var newPlusVertex = activeNeighbour.MatchedVertex;
-                                activeNeighbour.Label = activeVertex.Label * -1;
-                                newPlusVertex.Label = activeVertex.Label;
                                 stack.Add(newPlusVertex);
                                 activeNeighbour.Predecessor = activeVertex;
                                 plusTreeVertices.Add(newPlusVertex);
@@ -785,6 +752,12 @@ namespace _3D_Matching
                 var x = pathAUpwards[i];
                 if (x.Predecessor == null || x.OddPath != null)
                     continue;
+
+                if(x.OddPath==null && x.Predecessor != null)
+                {
+                    plusTreeVertices.Add(x);
+                    stack.Add(x);
+                }
                 x.OddPath = new List<Vertex>(pathAUpwards.Count - i - 1 + pathBUpwards.Count);
                 for (int j = i - 1; j >= 0; j--)
                 {
@@ -794,11 +767,11 @@ namespace _3D_Matching
                 {
                     x.OddPath.Add(pathBUpwards[j]);
                 }
-                if (!plusTreeVertices.Contains(x))
-                {
-                    plusTreeVertices.Add(x);
-                    stack.Add(x);
-                }
+                //if (!plusTreeVertices.Contains(x))
+                //{
+                //    plusTreeVertices.Add(x);
+                //    stack.Add(x);
+                //}
             }
 
             for (int i = pathBUpwards.Count-1; i>=0; i--)
@@ -806,6 +779,11 @@ namespace _3D_Matching
                 var x = pathBUpwards[i];
                 if (x.Predecessor == null || x.OddPath != null)
                     continue;
+                if (x.OddPath == null && x.Predecessor != null)
+                {
+                    plusTreeVertices.Add(x);
+                    stack.Add(x);
+                }
                 x.OddPath = new List<Vertex>(pathBUpwards.Count - i - 1 + pathAUpwards.Count);
                 for (int j = i -1; j >= 0; j--)
                 {
@@ -816,11 +794,11 @@ namespace _3D_Matching
                     x.OddPath.Add(pathAUpwards[j]);
                 }
 
-                if (!plusTreeVertices.Contains(x))
-                {
-                    plusTreeVertices.Add(x);
-                    stack.Add(x);
-                }
+                //if (!plusTreeVertices.Contains(x))
+                //{
+                //    plusTreeVertices.Add(x);
+                //    stack.Add(x);
+                //}
             }
 
 
@@ -1125,7 +1103,6 @@ namespace _3D_Matching
         public Vertex MatchedVertex;
         public bool IsContracted;
         public int BlossomIndex;
-        public int Label;
         public List<Edge> Adj2Edges;
         public List<Edge> Adj3Edges;
         public Vertex ContractedWith;
@@ -1150,6 +1127,8 @@ namespace _3D_Matching
 
         public Edge Get2DEdgeBetween(Vertex oppositeVertex)
         {
+            if (Adj2Edges.Count > oppositeVertex.Adj2Edges.Count)
+                return oppositeVertex.Get2DEdgeBetween(this);
             if (oppositeVertex.Id < Id)
             {
                 for (int i = 0; i < Adj2Edges.Count; i++)
