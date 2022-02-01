@@ -198,18 +198,16 @@ namespace _3D_Matching.Solvers
                     }
 
 
-                    //foreach (var edge3Strich in matchingTupel.Where(_ => _.Item1.Id < 0))
                     for(int i = 0; i< matchingTupel.Count;i++)
                     {
                         var edge3Strich = matchingTupel[i];
                         if (edge3Strich.Item1.Id >= 0)
                             continue;
-                        if (_random.NextDouble() < 0.75)
+                        if (_random.NextDouble() < 0.45)
                         {
                             contractedEdges.Add((edge3Strich.Item1.OriginalVertex0, edge3Strich.Item1.OriginalVertex1));
                             continue;
                         }
-                        //var edge3 = new Edge(new List<Vertex> { edge3Strich.Item1.OriginalVertex0, edge3Strich.Item1.OriginalVertex1, edge3Strich.Item2 });
                         var edge3 = new Vertex[] { edge3Strich.Item1.OriginalVertex0, edge3Strich.Item1.OriginalVertex1, edge3Strich.Item2 };
                         int a = 0;
                         int b = 1;
@@ -239,9 +237,9 @@ namespace _3D_Matching.Solvers
                     }
 
                     _graph.InitializeFor2DMatchin(initialMatching: initialMatching, contractingEdges: contractedEdges);
-                    //res = _graph.GetMaximum2DMatching().maxMmatching;
                     _graph.ComputeMaximum2DMatching();
 
+                    //res = _graph.GetMaximum2DMatching().maxMmatching;
                     //valuePerIteration.Add(res.Count + 0.0);
 
 
