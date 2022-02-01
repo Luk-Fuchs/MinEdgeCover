@@ -168,7 +168,7 @@ namespace _3D_Matching.Solvers
                 {
                     iteration++;
 
-                    var matchingTupel = new List<(Vertex, Vertex)>();
+                    var matchingTupel = new List<(Vertex, Vertex)>(_graph.Vertices.Count/2);
 
                     for(int i = 0; i<_graph.Vertices.Count; i++)
                     {
@@ -181,19 +181,7 @@ namespace _3D_Matching.Solvers
 
                     var contractedEdges = new List<(Vertex, Vertex)>(matchingTupel.Count);
                     var initialMatching = new List<(Vertex, Vertex)>(matchingTupel.Count);
-                    //for (int i = 0; i < _additionalContractedEdges; i++)
-                    //{
-                    //    var edge = matchingTupel[_random.Next(matchingTupel.Count)];
-                    //    if (edge.Item1.Id < 0)
-                    //    {
-                    //        //i--;
-                    //        continue;
-                    //    }
-                    //    matchingTupel.Remove(edge);
-                    //    contractedEdges.Add(edge);
-                    //    if (matchingTupel.Count == 0)
-                    //        break;
-                    //}
+
                     for (int i = 0; i < matchingTupel.Count; i++)
                     {
                         var tupleEdge = matchingTupel[i];
@@ -203,34 +191,19 @@ namespace _3D_Matching.Solvers
                         {
                             contractedEdges.Add(tupleEdge);
                         }
-                        else if(_random.NextDouble()<0.5)
+                        else if (_random.NextDouble() < 0.7)
                         {
                             initialMatching.Add(tupleEdge);
                         }
                     }
-                    //for(int i = contractedEdges.Count; i > _additionalContractedEdges; i--)
-                    //{
-                    //    contractedEdges.RemoveAt(_random.Next(contractedEdges.Count));
-                    //}
-                    //foreach (var edge in contractedEdges)
-                    //int z = 0;
-                    //while (z < contractedEdges.Count)
-                    //{
-                    //    var edge = contractedEdges[z];
-                    //    var real2Edge = edge.Item1.Adj2Edges.Where(_ => _.Contains(edge.Item2)).First();
-                    //    if (real2Edge.Expandables().Count() == 0)
-                    //    {
-                    //        contractedEdges.RemoveAt(z);
-                    //    }
-                    //    else
-                    //    {
-                    //        z++;
-                    //    }
-                    //}
-                    //Console.WriteLine(contractedEdges.Count);
 
-                    foreach (var edge3Strich in matchingTupel.Where(_ => _.Item1.Id < 0))
+
+                    //foreach (var edge3Strich in matchingTupel.Where(_ => _.Item1.Id < 0))
+                    for(int i = 0; i< matchingTupel.Count;i++)
                     {
+                        var edge3Strich = matchingTupel[i];
+                        if (edge3Strich.Item1.Id >= 0)
+                            continue;
                         var edge3 = new Edge(new List<Vertex> { edge3Strich.Item1.OriginalVertex0, edge3Strich.Item1.OriginalVertex1, edge3Strich.Item2 });
                         if (_random.NextDouble() < 0.75)
                         {
