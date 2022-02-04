@@ -16,24 +16,26 @@ namespace _3D_Matching.Tests
         {
 
         }
-        public static String[,] RunSolvers(List<IMinimumEdgecoveringSolver> solvers, Dictionary<String,double> parameter ,String generationType= "readIn", double iterations = 2, int n=100, double p1 = 0.1, double p2 = 0.1, double p3 = 0.1)
+        public static String[,] RunSolvers(List<IMinimumEdgecoveringSolver> solvers, Dictionary<String,double> parameter ,String generationType= "readIn", int skip = 0,bool allowAllAsSingle = false,bool removeDegreeOne = true, double iterations = 2, int n=100, double p1 = 0.1, double p2 = 0.1, double p3 = 0.1)
         {
             var resData = new String[solvers.Count,(int)TestAttribute.Length];
             var time = new Stopwatch();
-
+            iterations += skip;
             var graphs = new List<Graph>();
             if(generationType == "readIn")
             {
                 String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\TestDaten2";
                 //String path = @"C:\Users\LFU\Desktop\Masterarbeit\UnitTestDaten";
                 string[] filePaths = Directory.GetFiles(path);
-                graphs = Enumerable.Range(0, Math.Min((int)iterations, filePaths.Length)).Select(_ => (Graph.BuildGraphFromCSV(filePaths[_]))).ToList();
+                graphs = Enumerable.Range(0, Math.Min((int)iterations, filePaths.Length)).Select(_ => (Graph.BuildGraphFromCSV(filePaths[_],allowAllAsSingle: allowAllAsSingle, removeDegreeOne: removeDegreeOne))).ToList();
                 iterations = graphs.Count();
             }
             else
             {
                 graphs = Enumerable.Range(0, (int)iterations).Select(_ => Graph.GenerateRandomGraph(n, p1: p1, p2: p2, p3: p3)).ToList();
             }
+
+            graphs = graphs.Skip(skip).ToList();
 
             for (int i = 0; i < solvers.Count; i++)
             {
@@ -65,12 +67,12 @@ namespace _3D_Matching.Tests
                     multipleTimesCoveredVertices += IsCover(graph, edgeCover).Item2;
                 }
                 time.Stop();
-                resData[i, (int)TestAttribute.Time] = time.ElapsedMilliseconds / iterations + "";
+                resData[i, (int)TestAttribute.Time] = Math.Round(time.ElapsedMilliseconds / iterations ,0) + "";
                 resData[i, (int)TestAttribute.Name] = solvers[i].Name;
-                resData[i, (int)TestAttribute.Edges] = totalEdgeCount / iterations + "";
+                resData[i, (int)TestAttribute.Edges] = Math.Round(totalEdgeCount / iterations,4) + "";
                 resData[i, (int)TestAttribute.Iter] = totalIterations / iterations + "";
                 resData[i, (int)TestAttribute.MultCov] = multipleTimesCoveredVertices / iterations + "";
-                resData[i, (int)TestAttribute.CoverComp] = edgeSizes[0] / iterations + "|"+ edgeSizes[1] / iterations + "|"+ edgeSizes[2] / iterations + "|";
+                resData[i, (int)TestAttribute.CoverComp] = (int)(edgeSizes[0] / iterations) + "|"+ (int)(edgeSizes[1] / iterations) + "|"+ (int)(edgeSizes[2] / iterations) + "|";
             }
 
             return resData;

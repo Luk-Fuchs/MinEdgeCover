@@ -15,7 +15,7 @@ namespace _3D_MatchingTests
             var graphString = "5;1->2;1->2->4;0->1;2->3;0->3";
             var graph = Graph.BuildGraphString(graphString);
             var contractingEdges = new List<Edge> {graph.Edges[0] };
-            graph.InitializeFor2DMatchin(contractingEdges: contractingEdges);
+            graph.InitializeFor2DMatchin();
             var matchingInfo = graph.GetMaximum2DMatching();
 
             Assert.AreEqual(2, matchingInfo.maxMmatching.Count);
@@ -26,7 +26,7 @@ namespace _3D_MatchingTests
             var graphString = "6;1->2;1->2->4;0->1;2->3;0->3;4->5";
             var graph = Graph.BuildGraphString(graphString);
             var contractingEdges = new List<Edge> { graph.Edges[0] };
-            graph.InitializeFor2DMatchin(contractingEdges);
+            graph.InitializeFor2DMatchin();
             var matchingInfo = graph.GetMaximum2DMatching();
 
             Assert.AreEqual(3, matchingInfo.maxMmatching.Count);
