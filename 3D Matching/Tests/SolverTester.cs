@@ -24,6 +24,7 @@ namespace _3D_Matching.Tests
             var graphs = new List<Graph>();
             if(generationType == "readIn")
             {
+                //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run1";
                 String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\TestDaten2";
                 //String path = @"C:\Users\LFU\Desktop\Masterarbeit\UnitTestDaten";
                 string[] filePaths = Directory.GetFiles(path);

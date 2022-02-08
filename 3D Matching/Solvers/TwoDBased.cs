@@ -14,7 +14,7 @@ namespace _3D_Matching.Solvers
         String _type = "";
         int _additionalContractedEdges = 10;
         private bool _randomContract;
-        public TwoDBased(String type = "splitAndAugment", bool randomContract = true, int additionalContractedEdges = 40)
+        public TwoDBased(String type = "2DContractWithBlossom", bool randomContract = true, int additionalContractedEdges = 40)
         {
             _type = type;
             _randomContract = randomContract;
@@ -191,7 +191,7 @@ namespace _3D_Matching.Solvers
                         {
                             contractedEdges.Add(tupleEdge);
                         }
-                        else if (_random.NextDouble() < 0.7)
+                        else if (_random.NextDouble() < 0.75)
                         {
                             initialMatching.Add(tupleEdge);
                         }
