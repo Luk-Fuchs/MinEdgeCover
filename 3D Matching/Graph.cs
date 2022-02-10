@@ -131,6 +131,7 @@ namespace _3D_Matching
                     continue;
                 var edgeVertices = activeLine.Split("->").Select(_ => vertices[Int32.Parse(_)]).ToList();
                 var newEdge = new Edge(edgeVertices);
+                newEdge.VertexCount = edgeVertices.Count;
                 newEdge.vertex0 = edgeVertices[0];
                 if(edgeVertices.Count>=2)
                     newEdge.vertex1 = edgeVertices[1];
@@ -174,6 +175,20 @@ namespace _3D_Matching
             {
                 edge2.Expandables();
             }
+            var subedgeComposition = new int[4];
+            foreach(var edge3 in graph.Edges.Where(_ => _.Vertices.Count == 3))
+            {
+                var subedges = 3;
+                if (edge3.vertex0.Get2DEdgeBetween(edge3.vertex1) == null)
+                    subedges--;
+                if(edge3.vertex2.Get2DEdgeBetween(edge3.vertex1) == null)
+                    subedges--;
+                if(edge3.vertex0.Get2DEdgeBetween(edge3.vertex2) == null)
+                    subedges--;
+                subedgeComposition[subedges]++;
+            }
+            Console.WriteLine("subedgeInfo: " +String.Join("|",subedgeComposition));
+
             return graph;
         }
         public static Graph BuildGraphString(String vertexCountAndEdges)
