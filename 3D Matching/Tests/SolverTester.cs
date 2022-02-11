@@ -40,6 +40,7 @@ namespace _3D_Matching.Tests
 
             graphs = graphs.Skip(skip).ToList();
 
+            iterations = graphs.Count;
             for (int i = 0; i < solvers.Count; i++)
             {
                 double totalIterations = 0.0;
