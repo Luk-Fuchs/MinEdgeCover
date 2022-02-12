@@ -49,7 +49,7 @@ namespace _3D_Matching.Solvers
                                                                                .Concat(secondPeakVertices.Select(_=>new Edge(new List<Vertex> {_})))
                                                                                .ToList(),
                                       firstPeakVertices.Concat(secondPeakVertices).ToList());
-            var ortSolver = new ORTS();
+            var ortSolver = new MIP();
             ortSolver.initialize(helpGraph);
             var peakMatching= ortSolver.Run(parameters);
             var verticesOfPeakMatching = peakMatching.cover.SelectMany(_ => _.Vertices).ToList();
@@ -68,7 +68,7 @@ namespace _3D_Matching.Solvers
             var test = tmpEdges.OrderBy(_ => -_.Vertices.Count).ToList();
             var stringA = String.Join("\n", peakMatching.cover);
             var tmpGraph = new Graph(tmpEdges, _graph.Vertices);
-            var tmpSolver = new ORTS();
+            var tmpSolver = new MIP();
 
             var testIsttmpEdgesVollständig = new List<Edge>();
             foreach(var edge2 in /*helpGraph.Edges.Where(_=>_.Vertices.Count==2))*/peakMatching.cover.Where(_=>_.Vertices.Count==2))

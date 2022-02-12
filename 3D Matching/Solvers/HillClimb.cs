@@ -56,7 +56,7 @@ namespace _3D_Matching.Solvers
 
                     if (maxEdgeSwapSize > edgeCover.Count - 5)
                     {
-                        solver = new ORTS();
+                        solver = new MIP();
                         solver.initialize(_graph);
                         return solver.Run(parameters);
                     }
@@ -79,7 +79,7 @@ namespace _3D_Matching.Solvers
                     Console.Write("Not optimal Edges: " + toOptimizeEdges.Count);
 
                     Graph tmpGraph = GenerateInducedSubgraph(toOptimizeEdges);
-                    var solver2 = new ORTS();
+                    var solver2 = new MIP();
                     solver2.initialize(tmpGraph);
                     var optimizedEdges = solver2.Run(parameters).cover;
                     Console.WriteLine("Optimized from " + toOptimizeEdges.Count + "to" + optimizedEdges.Count);
@@ -100,7 +100,7 @@ namespace _3D_Matching.Solvers
 
                     if (maxEdgeSwapSize > edgeCover.Count - 5)
                     {
-                        solver = new ORTS();
+                        solver = new MIP();
                         solver.initialize(_graph);
                         return solver.Run(parameters);
                     }
@@ -127,7 +127,7 @@ namespace _3D_Matching.Solvers
                     //Maybe remove duplicate
                     var tmpEdges = _graph.Edges.Where(_ => _.Vertices.Where(_ => tmpVertices.Contains(_)).Count() == _.Vertices.Count).ToList();
                     var tmpGraph = new Graph(tmpEdges, tmpVertices.ToList());
-                    var solver2 = new ORTS();
+                    var solver2 = new MIP();
                     solver2.initialize(tmpGraph);
                     var optimizedEdges = solver2.Run(parameters).cover;
                     Console.WriteLine("Optimized from " + toOptimizeEdges.Count + "to" + optimizedEdges.Count);
@@ -171,7 +171,7 @@ namespace _3D_Matching.Solvers
                             toOptimizeEdges.Add(tmpRes[index]);
                         }
                         Graph tmpGraph = GenerateInducedSubgraph(toOptimizeEdges);
-                        var solver2 = new ORTS();
+                        var solver2 = new MIP();
                         solver2.initialize(tmpGraph);
                         var optimizedEdges = solver2.Run(parameters).cover;
                         if (optimizedEdges.Count < toOptimizeEdges.Count)
