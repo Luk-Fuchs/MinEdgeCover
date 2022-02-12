@@ -571,52 +571,29 @@ namespace _3D_Matching
 
         private bool PartialAugment(Vertex newRoot, List<Vertex> plusTreeVertices, bool augmentationHasBeenPerformed)
         {
-            //plusTreeVertices.Shuffle();
-            //for (int i = 0; i< plusTreeVertices.Count;i++)
-            //{
-            //    var x = plusTreeVertices[i];
-            //    if ((x.Id<0 || x.AdjEdges.Contains(new Edge(new List<Vertex> { x })))&&x.Predecessor==null)
-            //    {
-            //var random = new Random();
-            var x = plusTreeVertices[_random.Next(plusTreeVertices.Count / 5)];       //sorgt dafür, dass die augmenting paths nicht zu lange werden
-            //var x = plusTreeVertices[0];
+            var x = plusTreeVertices[_random.Next(Math.Min(8, plusTreeVertices.Count / 5))];       //sorgt dafür, dass die augmenting paths nicht zu lange werden
             while (x.Predecessor != null)
             {
-
                 x = plusTreeVertices[_random.Next(plusTreeVertices.Count)];
             }
-                    if (x == newRoot)
-                    {
-                        ResetTree(plusTreeVertices);
+            if (x == newRoot)
+            {
+                ResetTree(plusTreeVertices);
                 return true;
-                    }
-                    Vertex activeNeighbour;
-                    Vertex activeVertex;
-                    //if (x.OddPath != null && x.Predecessor!=null)
-                    //{
-                    //    activeVertex = x.OddPath[1];
-                    //    activeNeighbour = x.OddPath[0];
-                    //}
-                    //else
-                    //{
-                        activeNeighbour = x.MatchedVertex;
-                        activeVertex = activeNeighbour.Predecessor;
-                    //}
+            }
+            Vertex activeNeighbour;
+            Vertex activeVertex;
+            activeNeighbour = x.MatchedVertex;
+            activeVertex = activeNeighbour.Predecessor;
 
-                    x.MatchedVertex = null;
-                    x.OddPath = null;
-                    x.IsInTree = false;
-                    x.Predecessor = null;
-                    x.BlossomIndex = 0;
-                    plusTreeVertices.Remove(x);
-                    Augment( plusTreeVertices, activeVertex, activeNeighbour);
-                    augmentationHasBeenPerformed = true;
-                    //break;
-            //    }
-            //}
-           
-            
-            return augmentationHasBeenPerformed;
+            x.MatchedVertex = null;
+            x.OddPath = null;
+            x.IsInTree = false;
+            x.Predecessor = null;
+            x.BlossomIndex = 0;
+            plusTreeVertices.Remove(x);
+            Augment(plusTreeVertices, activeVertex, activeNeighbour);
+            return true;
         }
 
 
