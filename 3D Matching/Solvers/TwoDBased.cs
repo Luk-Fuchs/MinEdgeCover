@@ -187,7 +187,7 @@ namespace _3D_Matching.Solvers
                         var tupleEdge = matchingTupel[i];
                         if (tupleEdge.Item1.Id < 0)
                             continue;
-                        if (tupleEdge.Item1.Get2DEdgeBetween(tupleEdge.Item2).Expandables().Count > 0)
+                        if (tupleEdge.Item1.Get2DEdgeBetween(tupleEdge.Item2).Expandables().Count > 0 && contractedEdges.Count<_graph.Vertices.Count/5)
                         {
                             contractedEdges.Add(tupleEdge);
                         }

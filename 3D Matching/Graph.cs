@@ -572,6 +572,7 @@ namespace _3D_Matching
         private bool PartialAugment(Vertex newRoot, List<Vertex> plusTreeVertices, bool augmentationHasBeenPerformed)
         {
             var x = plusTreeVertices[_random.Next(Math.Min(8, plusTreeVertices.Count / 5))];       //sorgt dafür, dass die augmenting paths nicht zu lange werden
+            //var x = plusTreeVertices[0];
             while (x.Predecessor != null)
             {
                 x = plusTreeVertices[_random.Next(plusTreeVertices.Count)];
