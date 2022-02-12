@@ -237,8 +237,11 @@ x = np.array(x)
 x=x.T
 same = [sum(y)/len(y) for y in x]
 plt.figure()
+plt.title("Anzahl benutzter Kanten im Schnitt bei |E(G)|=6500")
 plt.plot(np.arange(len(random)),random, label = "random")
 plt.plot(np.arange(len(same)),same, label = "same")
+plt.xlabel("Iteration")
+plt.ylabel("Anzahl verschiederner Kanten in Matchings bis Iteration x")
 plt.legend()
 plt.show()
 #DATE: C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run1    gemittelt über erste 10 instanzen
