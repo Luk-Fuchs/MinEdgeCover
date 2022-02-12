@@ -63,7 +63,7 @@ namespace _3D_Matching.Solvers
 
             var edges2 = _graph.Edges.Where(_ => _.Vertices.Where(_ => vertices2.Contains(_)).Count() == _.Vertices.Count).ToList();
             var graph2 = new Graph(edges2, vertices2);
-            var solver2 = new ORTS();
+            var solver2 = new MIP();
             solver2.initialize(graph2);
             var edgeCover2 = solver2.Run(parameters).cover;
             var res = edges3.Concat(edgeCover2).ToList();
@@ -205,7 +205,7 @@ namespace _3D_Matching.Solvers
                         uncoveredVertices.Remove(vertex);
                     var eEdgesOfS = _edges.Where(_ => _.Vertices.Where(x => !s.Contains(x)).Count() == 0).ToList();
 
-                    var solver2 = new ORTS();
+                    var solver2 = new MIP();
                     solver2.initialize(new Graph(eEdgesOfS,s));
                     var partialRes = solver2.Run(parameters).cover;//).ToList();
                     if(uncoveredVertices.Count() == 0)
@@ -227,7 +227,7 @@ namespace _3D_Matching.Solvers
             }
             if (notFinished)
             {
-            var solver = new ORTS();
+            var solver = new MIP();
             solver.initialize(new Graph(edgesCopy,verticesCopy));
             edgeCover = edgeCover.Concat(solver.Run(parameters).cover).ToList();
             }
