@@ -9,6 +9,7 @@ namespace _3D_Matching
 {
     public class Graph
     {
+        public Random _random = new Random();
         bool _adjEdgesAreInitialized = false;
         public Graph(List<Edge> edges, List<Vertex> vertices)
         {
@@ -30,6 +31,7 @@ namespace _3D_Matching
         
         public List<Edge> Edges { get => _edges != null ? _edges : GetAndSetEdges(); set=>_edges= value; } 
         private Func<IList<Vertex>, bool> _isEdge;
+
         public bool IsEdge(IList<Vertex> potentialEdge)
         {
             if (_isEdge != null)
@@ -569,34 +571,51 @@ namespace _3D_Matching
 
         private bool PartialAugment(Vertex newRoot, List<Vertex> plusTreeVertices, bool augmentationHasBeenPerformed)
         {
-            for(int i = 0; i< plusTreeVertices.Count;i++)
+            //plusTreeVertices.Shuffle();
+            //for (int i = 0; i< plusTreeVertices.Count;i++)
+            //{
+            //    var x = plusTreeVertices[i];
+            //    if ((x.Id<0 || x.AdjEdges.Contains(new Edge(new List<Vertex> { x })))&&x.Predecessor==null)
+            //    {
+            //var random = new Random();
+            var x = plusTreeVertices[_random.Next(plusTreeVertices.Count / 5)];       //sorgt dafür, dass die augmenting paths nicht zu lange werden
+            //var x = plusTreeVertices[0];
+            while (x.Predecessor != null)
             {
-                var x = plusTreeVertices[i];
-                if (x.Id<0 || x.AdjEdges.Contains(new Edge(new List<Vertex> { x })))
-                {
+
+                x = plusTreeVertices[_random.Next(plusTreeVertices.Count)];
+            }
                     if (x == newRoot)
-                        break;
+                    {
+                        ResetTree(plusTreeVertices);
+                return true;
+                    }
                     Vertex activeNeighbour;
                     Vertex activeVertex;
-                    if (x.OddPath != null)
-                    {
-                        activeVertex = x.OddPath[1];
-                        activeNeighbour = x.OddPath[0];
-                    }
-                    else
-                    {
+                    //if (x.OddPath != null && x.Predecessor!=null)
+                    //{
+                    //    activeVertex = x.OddPath[1];
+                    //    activeNeighbour = x.OddPath[0];
+                    //}
+                    //else
+                    //{
                         activeNeighbour = x.MatchedVertex;
                         activeVertex = activeNeighbour.Predecessor;
-                    }
+                    //}
 
                     x.MatchedVertex = null;
+                    x.OddPath = null;
+                    x.IsInTree = false;
+                    x.Predecessor = null;
+                    x.BlossomIndex = 0;
+                    plusTreeVertices.Remove(x);
                     Augment( plusTreeVertices, activeVertex, activeNeighbour);
                     augmentationHasBeenPerformed = true;
-                    break;
-                }
-            }
+                    //break;
+            //    }
+            //}
            
-            ResetTree(plusTreeVertices);
+            
             return augmentationHasBeenPerformed;
         }
 
