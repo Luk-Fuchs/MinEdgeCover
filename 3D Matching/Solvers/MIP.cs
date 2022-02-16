@@ -50,7 +50,7 @@ namespace _3D_Matching.Solvers
                             //constraint.SetCoefficient(x[j], 1);
                             expr.AddTerm(1.0, x[j]);
                     }
-                    solver.AddConstr(expr, GRB.Equals, 1, "c0");
+                    solver.AddConstr(expr, GRB.EQUAL, 1, "c0");
                 }
                 solver.Optimize();
                 var res = new List<Edge>();
