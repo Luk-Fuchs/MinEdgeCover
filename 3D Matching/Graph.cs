@@ -19,12 +19,12 @@ namespace _3D_Matching
         private List<Edge> _edges;
         public List<Vertex> Vertices;
         public List<Vertex> ContractedVertices;
-        private List<Edge> _2DEdges;
-        public List<Edge> TwodEdges()
+        private Edge[] _2DEdges;
+        public Edge[] TwodEdges()
         {
             if (_2DEdges == null)
             {
-                _2DEdges = Edges.Where(_ => _.Vertices.Count == 2).ToList();
+                _2DEdges = Edges.Where(_ => _.Vertices.Count == 2).ToArray();
             }
             return _2DEdges;
         }
@@ -190,7 +190,8 @@ namespace _3D_Matching
                 subedgeComposition[subedges]++;
             }
             Console.WriteLine("subedgeInfo: " +String.Join("|",subedgeComposition));
-
+            //Console.WriteLine(edges.Where(_ => _.VertexCount == 2).Count());
+            //Console.WriteLine(edges.Where(_ => _.VertexCount == 3).Count());
             return graph;
         }
         public static Graph BuildGraphString(String vertexCountAndEdges)
@@ -288,13 +289,14 @@ namespace _3D_Matching
             SetInitialValuesForVertices(contractingEdges);
 
             var twoDEdges = TwodEdges();
-            for (int i = 0;i< twoDEdges.Count;i++)
+            for (int i = 0;i< twoDEdges.Length;i++)
             {
-                var edge = twoDEdges[i];
-                if (edge.vertex0.IsContracted || edge.vertex1.IsContracted)
+                var vertex0 = twoDEdges[i].vertex0;
+                var vertex1 = twoDEdges[i].vertex1;
+                if (vertex0.IsContracted || vertex1.IsContracted)
                     continue;
-                edge.vertex1.NeighboursFor2DMatching.Add(edge.vertex0);
-                edge.vertex0.NeighboursFor2DMatching.Add(edge.vertex1);
+                vertex1.NeighboursFor2DMatching.Add(vertex0);
+                vertex0.NeighboursFor2DMatching.Add(vertex1);
             }
 
             SetContractingVerticesNeighberhood(contractingEdges);
@@ -514,9 +516,10 @@ namespace _3D_Matching
         private bool TryAndDoAugmentation(Vertex newRoot, List<Vertex> plusTreeVertices, Vertex activeVertex)
         {
             bool augmentationHasBeenPerformed = false;
-            for (int i = 0; i < activeVertex.NeighboursFor2DMatching.Count; i++)
+            var neighbouhood = activeVertex.NeighboursFor2DMatching;
+            for (int i = 0; i < neighbouhood.Count; i++)
             {
-                var neighbour = activeVertex.NeighboursFor2DMatching[i];
+                var neighbour = neighbouhood[i];
                 if (neighbour.MatchedVertex == null && neighbour != newRoot)
                 {
                     Augment(plusTreeVertices, activeVertex, neighbour);

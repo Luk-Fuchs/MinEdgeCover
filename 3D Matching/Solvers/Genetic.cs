@@ -91,7 +91,7 @@ namespace _3D_Matching.Solvers
             else if (_type == "expandFrom2D")
             {
                 var bestRes = _graph.Edges.ToList();
-                var twoDEdges = _graph.TwodEdges();
+                var twoDEdges = _graph.TwodEdges().ToList();
                 while (time.ElapsedMilliseconds < maxTime)
                 {
                     iteration++;
