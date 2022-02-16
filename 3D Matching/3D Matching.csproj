@@ -12,11 +12,18 @@
 
   <ItemGroup>
     <PackageReference Include="Google.OrTools" Version="9.1.9490" />
+    <PackageReference Include="WrapperCoinMP" Version="1.2.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="gurobi95.netstandard20">
       <HintPath>..\..\..\..\..\..\gurobi950\win64\lib\gurobi95.netstandard20.dll</HintPath>
+    </Reference>
+    <Reference Include="Sonnet">
+      <HintPath>..\..\..\..\..\..\Sonnet1.3\x64\Sonnet.dll</HintPath>
+    </Reference>
+    <Reference Include="SonnetWrapper">
+      <HintPath>..\..\..\..\..\..\Sonnet1.3\x64\SonnetWrapper.dll</HintPath>
     </Reference>
   </ItemGroup>
 
