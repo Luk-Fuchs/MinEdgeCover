@@ -27,14 +27,30 @@ namespace _3D_Matching.Tests
             csvParameterString += "vertical," + vertical + ";";
             csvParameterString += "plottype," + plottype ;
             System.IO.File.WriteAllText(@"C:\Users\LFU\Desktop\tmp\parameters.csv", csvParameterString);
-            RunPythonSkript();
+            RunPythonSkript(@"C:\Users\LFU\Documents\GitHub\MinEdgeCover\PythonPlots\plot.py");
+        }
+        public static void CreateIntervals(List<Edge> cover, bool reorde = false)
+        {
+            if(reorde)
+                cover = cover.OrderBy(_ => _.Vertices.Min(x=>x.Interval[0])).ToList();
+            var csvString = "[" + String.Join(",",cover.Select(_=>"["+ String.Join(",",_.Vertices.Select(x=>"["+x.Interval[0]+","+x.Interval[1]+"]"))+"]")) + "]";
+            System.IO.File.WriteAllText(@"C:\Users\LFU\Desktop\tmp\intervals.csv", csvString);
+            RunPythonSkript(@"C:\Users\LFU\Documents\GitHub\MinEdgeCover\PythonPlots\plot_intervals.py");
+        }
+        public static void ExecuteLines(List<string> lines)
+        {
+            var linesString = String.Join("\n", lines); 
+            System.IO.File.WriteAllText(@"C:\Users\LFU\Desktop\tmp\string_to_execute.txt", linesString);
+            RunPythonSkript(@"C:\Users\LFU\Documents\GitHub\MinEdgeCover\PythonPlots\execute_string.py");
         }
 
-        private static void RunPythonSkript()
+
+
+        private static void RunPythonSkript(string fileToExecute)
         {
             ProcessStartInfo start = new ProcessStartInfo();
             start.FileName = @"C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python37_64\python.exe";//cmd is full path to python.exe
-            start.Arguments = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\PythonPlots\plot.py";//args is path to .py file and any cmd line args
+            start.Arguments = fileToExecute;//args is path to .py file and any cmd line args
             start.UseShellExecute = false;
             start.RedirectStandardOutput = true;
             using (Process process = Process.Start(start))
