@@ -1,6 +1,7 @@
 ﻿using _3D_Matching.Tests;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -106,7 +107,7 @@ namespace _3D_Matching
             var graph = new Graph(edges, vertices);
             return graph;
         }
-        public static Graph BuildGraphFromCSV(String path, bool allowAllAsSingle = false, bool removeDegreeOne = false)
+        public static Graph BuildGraphFromCSV(String path, bool allowAllAsSingle = false, bool forceCompletness = false, bool removeDegreeOne = false)
         { 
             string[] inputLines = System.IO.File.ReadAllLines(path);
 
@@ -133,12 +134,7 @@ namespace _3D_Matching
                     continue;
                 var edgeVertices = activeLine.Split("->").Select(_ => vertices[Int32.Parse(_)]).ToList();
                 var newEdge = new Edge(edgeVertices);
-                newEdge.VertexCount = edgeVertices.Count;
-                newEdge.vertex0 = edgeVertices[0];
-                if(edgeVertices.Count>=2)
-                    newEdge.vertex1 = edgeVertices[1];
-                if(edgeVertices.Count>=3)
-                    newEdge.vertex2 = edgeVertices[2];
+                
                 edges.Add(newEdge);
             }
 
@@ -172,10 +168,26 @@ namespace _3D_Matching
                     edge.VerticesIds = edge.Vertices.Select(_ => _.Id).ToList();
                 }
             }
+            if (forceCompletness)
+            {
+                foreach (var edge3 in graph.Edges.Where(_ => _.Vertices.Count == 3).ToList())
+                {
+                    if (edge3.vertex0.Get2DEdgeBetween(edge3.vertex1) == null)
+                        graph.Edges.Add(new Edge(new List<Vertex> {edge3.vertex0,edge3.vertex1 }));
+                    if (edge3.vertex2.Get2DEdgeBetween(edge3.vertex1) == null)
+                        graph.Edges.Add(new Edge(new List<Vertex> { edge3.vertex1, edge3.vertex2 }));
+                    if (edge3.vertex0.Get2DEdgeBetween(edge3.vertex2) == null)
+                        graph.Edges.Add(new Edge(new List<Vertex> { edge3.vertex0, edge3.vertex2 }));
+                }
+            }
+            graph.ResetVertexAdjEdges();
 
+            Console.WriteLine(graph.Edges.Count);
             foreach(var edge2 in graph.TwodEdges())
             {
                 edge2.Expandables();
+                if (edge2.Expandables().Count != 0)
+                    graph.Edges.Remove(edge2);
             }
             var subedgeComposition = new int[4];
             foreach(var edge3 in graph.Edges.Where(_ => _.Vertices.Count == 3))
@@ -192,6 +204,7 @@ namespace _3D_Matching
             Console.WriteLine("subedgeInfo: " +String.Join("|",subedgeComposition));
             //Console.WriteLine(edges.Where(_ => _.VertexCount == 2).Count());
             //Console.WriteLine(edges.Where(_ => _.VertexCount == 3).Count());
+            Console.WriteLine(graph.Edges.Count);
             return graph;
         }
         public static Graph BuildGraphString(String vertexCountAndEdges)
@@ -236,12 +249,13 @@ namespace _3D_Matching
         }
         public void ResetVertexAdjEdges()
         {
-            _adjEdgesAreInitialized = true;
-            foreach (var vertex in Vertices)
-                vertex.AdjEdges = new List<Edge>();
-            foreach (var edge in _edges)
-                foreach (var vertex in edge.Vertices)
-                    vertex.AdjEdges.Add(edge);
+            _adjEdgesAreInitialized = false;
+            SetVertexAdjEdges();
+            //foreach (var vertex in Vertices)
+            //    vertex.AdjEdges = new List<Edge>();
+            //foreach (var edge in _edges)
+            //    foreach (var vertex in edge.Vertices)
+            //        vertex.AdjEdges.Add(edge);
         }
         public (int amount, int time) CalculatePeakTime(List<Vertex> vertices = null)
         {
@@ -513,6 +527,365 @@ namespace _3D_Matching
             }
         }
 
+        public void DynamicContraction(double maxTime, ref int iteration)
+        {
+            if (ContractedVertices != null && ContractedVertices.Count != 0)
+                throw new NotImplementedException();
+
+            var time = new Stopwatch();
+            time.Start();
+            var potentialRootesLinkedList = new LinkedList<Vertex>(Vertices);
+            while (time.ElapsedMilliseconds<maxTime)
+            {
+                iteration++;
+                //Console.WriteLine(ContractedVertices.Count);
+                if (potentialRootesLinkedList.Count == 0)
+                {
+                    //if (_random.NextDouble() < 1)
+                    //{
+                    var contractedUnmatchedVertices = ContractedVertices.Where(_ => _.MatchedVertex == null).ToList();
+                    //    if (contractedUnmatchedVertices.Count != 0)
+                    //{
+                    //        var contractedVertex = contractedUnmatchedVertices[_random.Next(contractedUnmatchedVertices.Count)];
+
+                    //undo contraction of rhis vertex
+                    foreach (var contractedVertex in contractedUnmatchedVertices)
+                    {
+
+                        var vertex0 = contractedVertex.OriginalVertex0;
+                        var vertex1 = contractedVertex.OriginalVertex1;
+
+                        vertex0.MatchedVertex = null;
+                        vertex1.MatchedVertex = null;
+                        vertex0.IsContracted = false;
+                        vertex1.IsContracted = false;
+                        vertex0.OddPath = null;
+                        vertex1.OddPath = null;
+                        vertex0.Predecessor = null;
+                        vertex1.Predecessor = null;
+                        vertex0.NeighboursFor2DMatching.Clear();
+                        vertex1.NeighboursFor2DMatching.Clear();
+
+                        for (int i = 0; i < contractedVertex.NeighboursFor2DMatching.Count; i++)
+                        {
+                            var neighbour = contractedVertex.NeighboursFor2DMatching[i];
+                            neighbour.NeighboursFor2DMatching.Remove(contractedVertex);
+                        }
+                        for (int i = 0; i < vertex0.Adj2Edges.Count; i++)
+                        {
+                            var a = vertex0.Adj2Edges[i].vertex0;
+                            var b = vertex0.Adj2Edges[i].vertex1;
+                            if (a.IsContracted || b.IsContracted)
+                                continue;
+                            a.NeighboursFor2DMatching.Add(b);
+                            b.NeighboursFor2DMatching.Add(a);
+                        }
+                        for (int i = 0; i < vertex1.Adj2Edges.Count; i++)
+                        {
+                            var a = vertex1.Adj2Edges[i].vertex0;
+                            var b = vertex1.Adj2Edges[i].vertex1;
+                            if (a.IsContracted || b.IsContracted)
+                                continue;
+                            a.NeighboursFor2DMatching.Add(b);
+                            b.NeighboursFor2DMatching.Add(a);
+                        }
+                        for (int i = 0; i < vertex0.Adj3Edges.Count; i++)
+                        {
+                            var edge3 = vertex0.Adj3Edges[i];
+                            Vertex a, b = null;
+                            if (edge3.vertex0 == vertex0)
+                            {
+                                a = edge3.vertex1;
+                                b = edge3.vertex2;
+                            }
+                            else if (edge3.vertex1 == vertex0)
+                            {
+                                a = edge3.vertex0;
+                                b = edge3.vertex2;
+                            }
+                            else
+                            {
+                                a = edge3.vertex0;
+                                b = edge3.vertex1;
+                            }
+                            if (a.IsContracted && a.ContractedVertex == b.ContractedVertex)
+                            {
+                                a.ContractedVertex.NeighboursFor2DMatching.Add(vertex0);
+                                vertex0.NeighboursFor2DMatching.Add(a.ContractedVertex);
+                            }
+                        }
+                        for (int i = 0; i < vertex1.Adj3Edges.Count; i++)
+                        {
+                            var edge3 = vertex1.Adj3Edges[i];
+                            Vertex a, b = null;
+                            if (edge3.vertex0 == vertex1)
+                            {
+                                a = edge3.vertex1;
+                                b = edge3.vertex2;
+                            }
+                            else if (edge3.vertex1 == vertex1)
+                            {
+                                a = edge3.vertex0;
+                                b = edge3.vertex2;
+                            }
+                            else
+                            {
+                                a = edge3.vertex0;
+                                b = edge3.vertex1;
+                            }
+                            if (a.IsContracted && a.ContractedVertex == b.ContractedVertex)
+                            {
+                                a.ContractedVertex.NeighboursFor2DMatching.Add(vertex1);
+                                vertex1.NeighboursFor2DMatching.Add(a.ContractedVertex);
+                            }
+                        }
+                        potentialRootesLinkedList.Remove(contractedVertex);  //sicherstellen dass nicht benötigt
+                        ContractedVertices.Remove(contractedVertex);
+                        potentialRootesLinkedList.AddLast(vertex1);
+                        potentialRootesLinkedList.AddLast(vertex0);
+                        continue;
+                    }
+                //}
+
+                    //contract random matched vertices
+                    for (int contractionCount = 0; contractionCount < 10; contractionCount++)
+                    {
+                        var matchedVertex0 = Vertices[_random.Next(Vertices.Count)];
+                        int continueLimit = 0;
+                        while (matchedVertex0.MatchedVertex == null || matchedVertex0.MatchedVertex.Id < 0 || matchedVertex0.IsContracted || matchedVertex0.MatchedVertex.IsContracted)
+                        {
+                            matchedVertex0 = Vertices[_random.Next(Vertices.Count)];
+                            continueLimit++;
+                            if (continueLimit > 300)
+                                break;
+                        }
+                        if (continueLimit > 100)
+                            continue;
+                        var matchedVertex1 = matchedVertex0.MatchedVertex;
+                        var newContractedVertex = new Vertex(-1);        //nicht mehr eindeutig aber auch egal
+                        newContractedVertex.NeighboursFor2DMatching = new List<Vertex>();
+                        newContractedVertex.OriginalVertex0 = matchedVertex0;
+                        newContractedVertex.OriginalVertex1 = matchedVertex1;
+                        matchedVertex0.IsContracted = true;
+                        matchedVertex1.IsContracted = true;
+                        matchedVertex0.ContractedVertex = newContractedVertex;
+                        matchedVertex1.ContractedVertex = newContractedVertex;
+
+                        for (int i = 0; i < matchedVertex0.NeighboursFor2DMatching.Count; i++)
+                        {
+                            var neighbour = matchedVertex0.NeighboursFor2DMatching[i];
+                            neighbour.NeighboursFor2DMatching.Remove(matchedVertex0);
+                        }
+                        for (int i = 0; i < matchedVertex1.NeighboursFor2DMatching.Count; i++)
+                        {
+                            var neighbour = matchedVertex1.NeighboursFor2DMatching[i];
+                            neighbour.NeighboursFor2DMatching.Remove(matchedVertex1);
+                        }
+
+                        var matchedEdge = matchedVertex0.Get2DEdgeBetween(matchedVertex1);
+                        var expandables = matchedEdge.Expandables();
+
+                        for (int i = 0; i < expandables.Count; i++)
+                        {
+                            expandables[i].NeighboursFor2DMatching.Add(newContractedVertex);
+                            newContractedVertex.NeighboursFor2DMatching.Add(expandables[i]);
+                        }
+
+
+
+
+                        potentialRootesLinkedList.Remove(matchedVertex0);
+                        potentialRootesLinkedList.Remove(matchedVertex1);
+                        potentialRootesLinkedList.AddLast(newContractedVertex);
+                        ContractedVertices.Add(newContractedVertex);
+                    }
+
+
+                    foreach(var vertex in Vertices)
+                    {
+                        if (vertex.MatchedVertex != null && vertex.Id>=0 && vertex.MatchedVertex.Id>=0 && vertex.IsContracted==false && vertex.MatchedVertex.IsContracted==false && _random.NextDouble()<0.65)
+                        {
+                            potentialRootesLinkedList.AddLast(vertex);
+                            potentialRootesLinkedList.AddLast(vertex.MatchedVertex);
+                            vertex.MatchedVertex.MatchedVertex = null;
+                            vertex.MatchedVertex = null;
+                        }
+                    }
+                }
+                Vertex newRoot = potentialRootesLinkedList.First.Value;
+                potentialRootesLinkedList.RemoveFirst();
+                if (newRoot.IsContracted || newRoot.MatchedVertex != null)
+                    continue;
+
+                newRoot.IsInTree = true;
+                var plusTreeVertices = new List<Vertex>(20);
+                plusTreeVertices.Add(newRoot);
+
+
+                int blossomCount = 0;
+
+                bool augmentationHasBeenPerformed = TryAndDoAugmentation(newRoot, plusTreeVertices, newRoot);
+
+                var stackIndex = 0;
+                while (!augmentationHasBeenPerformed && stackIndex < plusTreeVertices.Count)
+                {
+                    var activeVertex = plusTreeVertices[stackIndex];
+                    stackIndex++;
+
+                    for (int neighbourIndex = 0; neighbourIndex < activeVertex.NeighboursFor2DMatching.Count; neighbourIndex++)
+                    {
+                        var activeNeighbour = activeVertex.NeighboursFor2DMatching[neighbourIndex];
+                        if (activeNeighbour.IsContracted)
+                            continue;
+                        if (activeNeighbour.IsInTree && (activeNeighbour.BlossomIndex != activeVertex.BlossomIndex || activeNeighbour.BlossomIndex + activeVertex.BlossomIndex == 0) && (activeNeighbour.Predecessor == null || activeNeighbour.OddPath != null))
+                        { // do blossom building.                         => no blossominternal edge                                                                                            =>is of type plus               => is blossom of tpye plus          
+                            var oldStackCount = plusTreeVertices.Count;
+                            CalculateAndSetOddPaths(activeVertex, activeNeighbour, plusTreeVertices, ref blossomCount);
+
+                            for (int i = oldStackCount; i < plusTreeVertices.Count; i++)
+                            {
+                                var v = plusTreeVertices[i];
+                                augmentationHasBeenPerformed = TryAndDoAugmentation(newRoot, plusTreeVertices, v);
+                                if (augmentationHasBeenPerformed)
+                                {
+                                    break;
+                                }
+                            }
+                            if (augmentationHasBeenPerformed)
+                                break;
+
+                        }
+                        else if (activeNeighbour.IsInTree == false)
+                        {
+                            if (activeNeighbour.MatchedVertex != null)
+                            {// grow
+                                var newPlusVertex = activeNeighbour.MatchedVertex;
+                                activeNeighbour.Predecessor = activeVertex;
+                                plusTreeVertices.Add(newPlusVertex);
+
+                                newPlusVertex.IsInTree = true;
+                                activeNeighbour.IsInTree = true;
+
+                                augmentationHasBeenPerformed = TryAndDoAugmentation(newRoot, plusTreeVertices, newPlusVertex);
+                                if (augmentationHasBeenPerformed)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                }
+                if (!augmentationHasBeenPerformed)
+                {
+                    augmentationHasBeenPerformed = PartialAugment(newRoot, plusTreeVertices, augmentationHasBeenPerformed, prefereContractedVerticesAsSingle:true);
+                }
+
+            }
+            var contractedUnmatchedVertices2 = ContractedVertices.Where(_ => _.MatchedVertex == null).ToList();
+            //    if (contractedUnmatchedVertices.Count != 0)
+            //{
+            //        var contractedVertex = contractedUnmatchedVertices[_random.Next(contractedUnmatchedVertices.Count)];
+
+            //undo contraction of rhis vertex
+            foreach (var contractedVertex in contractedUnmatchedVertices2)
+            {
+
+                var vertex0 = contractedVertex.OriginalVertex0;
+                var vertex1 = contractedVertex.OriginalVertex1;
+
+                vertex0.MatchedVertex = null;
+                vertex1.MatchedVertex = null;
+                vertex0.IsContracted = false;
+                vertex1.IsContracted = false;
+                vertex0.OddPath = null;
+                vertex1.OddPath = null;
+                vertex0.Predecessor = null;
+                vertex1.Predecessor = null;
+                vertex0.NeighboursFor2DMatching.Clear();
+                vertex1.NeighboursFor2DMatching.Clear();
+
+                for (int i = 0; i < contractedVertex.NeighboursFor2DMatching.Count; i++)
+                {
+                    var neighbour = contractedVertex.NeighboursFor2DMatching[i];
+                    neighbour.NeighboursFor2DMatching.Remove(contractedVertex);
+                }
+                for (int i = 0; i < vertex0.Adj2Edges.Count; i++)
+                {
+                    var a = vertex0.Adj2Edges[i].vertex0;
+                    var b = vertex0.Adj2Edges[i].vertex1;
+                    if (a.IsContracted || b.IsContracted)
+                        continue;
+                    a.NeighboursFor2DMatching.Add(b);
+                    b.NeighboursFor2DMatching.Add(a);
+                }
+                for (int i = 0; i < vertex1.Adj2Edges.Count; i++)
+                {
+                    var a = vertex1.Adj2Edges[i].vertex0;
+                    var b = vertex1.Adj2Edges[i].vertex1;
+                    if (a.IsContracted || b.IsContracted)
+                        continue;
+                    a.NeighboursFor2DMatching.Add(b);
+                    b.NeighboursFor2DMatching.Add(a);
+                }
+                for (int i = 0; i < vertex0.Adj3Edges.Count; i++)
+                {
+                    var edge3 = vertex0.Adj3Edges[i];
+                    Vertex a, b = null;
+                    if (edge3.vertex0 == vertex0)
+                    {
+                        a = edge3.vertex1;
+                        b = edge3.vertex2;
+                    }
+                    else if (edge3.vertex1 == vertex0)
+                    {
+                        a = edge3.vertex0;
+                        b = edge3.vertex2;
+                    }
+                    else
+                    {
+                        a = edge3.vertex0;
+                        b = edge3.vertex1;
+                    }
+                    if (a.IsContracted && a.ContractedVertex == b.ContractedVertex)
+                    {
+                        a.ContractedVertex.NeighboursFor2DMatching.Add(vertex0);
+                        vertex0.NeighboursFor2DMatching.Add(a.ContractedVertex);
+                    }
+                }
+                for (int i = 0; i < vertex1.Adj3Edges.Count; i++)
+                {
+                    var edge3 = vertex1.Adj3Edges[i];
+                    Vertex a, b = null;
+                    if (edge3.vertex0 == vertex1)
+                    {
+                        a = edge3.vertex1;
+                        b = edge3.vertex2;
+                    }
+                    else if (edge3.vertex1 == vertex1)
+                    {
+                        a = edge3.vertex0;
+                        b = edge3.vertex2;
+                    }
+                    else
+                    {
+                        a = edge3.vertex0;
+                        b = edge3.vertex1;
+                    }
+                    if (a.IsContracted && a.ContractedVertex == b.ContractedVertex)
+                    {
+                        a.ContractedVertex.NeighboursFor2DMatching.Add(vertex1);
+                        vertex1.NeighboursFor2DMatching.Add(a.ContractedVertex);
+                    }
+                }
+                potentialRootesLinkedList.Remove(contractedVertex);  //sicherstellen dass nicht benötigt
+                ContractedVertices.Remove(contractedVertex);
+                potentialRootesLinkedList.AddLast(vertex1);
+                potentialRootesLinkedList.AddLast(vertex0);
+                continue;
+            }
+        }
+
         private bool TryAndDoAugmentation(Vertex newRoot, List<Vertex> plusTreeVertices, Vertex activeVertex)
         {
             bool augmentationHasBeenPerformed = false;
@@ -572,14 +945,24 @@ namespace _3D_Matching
             return (resMatching, uncoveredVertices);
         }
 
-        private bool PartialAugment(Vertex newRoot, List<Vertex> plusTreeVertices, bool augmentationHasBeenPerformed)
+        private bool PartialAugment(Vertex newRoot, List<Vertex> plusTreeVertices, bool augmentationHasBeenPerformed, bool prefereContractedVerticesAsSingle = false)
         {
             var x = plusTreeVertices[_random.Next(Math.Min(8, plusTreeVertices.Count / 5))];       //sorgt dafür, dass die augmenting paths nicht zu lange werden
             //var x = plusTreeVertices[0];
-            while (x.Predecessor != null)
+            if (prefereContractedVerticesAsSingle)
             {
-                x = plusTreeVertices[_random.Next(plusTreeVertices.Count)];
+                int i = 0;
+                while (x.Predecessor != null && i<15 && x.Id>=0 )
+                {
+                    x = plusTreeVertices[_random.Next(plusTreeVertices.Count)];
+                }
             }
+                while (x.Predecessor != null)
+                {
+                    x = plusTreeVertices[_random.Next(plusTreeVertices.Count)];
+                }
+
+            
             if (x == newRoot)
             {
                 ResetTree(plusTreeVertices);
@@ -917,6 +1300,12 @@ namespace _3D_Matching
         {
             Vertices = vertices;
             VerticesIds = vertices.Select(_ => _.Id).ToList();
+            VertexCount = Vertices.Count;
+            vertex0 = Vertices[0];
+            if (VertexCount >= 2)
+                vertex1 = Vertices[1];
+            if (VertexCount >= 3)
+                vertex2 = Vertices[2];
         }
         public override string ToString()
         {
@@ -1026,7 +1415,7 @@ namespace _3D_Matching
         public Vertex ContractedWith;
         public Vertex ContractedVertex;
 
-
+        public int skip = 0; 
         public bool IsCovered = false;
         public int TimesCovered = 0;
         public int[] Interval;
