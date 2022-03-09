@@ -29,11 +29,19 @@ namespace _3D_Matching.Tests
             System.IO.File.WriteAllText(@"C:\Users\LFU\Desktop\tmp\parameters.csv", csvParameterString);
             RunPythonSkript(@"C:\Users\LFU\Documents\GitHub\MinEdgeCover\PythonPlots\plot.py");
         }
-        public static void CreateIntervals(List<Edge> cover, bool reorde = false)
+        public static void CreateIntervals(List<Edge> cover, bool reorde = false, List<String> additionalPythonLines = null)
         {
             if(reorde)
                 cover = cover.OrderBy(_ => _.Vertices.Min(x=>x.Interval[0])).ToList();
             var csvString = "[" + String.Join(",",cover.Select(_=>"["+ String.Join(",",_.Vertices.Select(x=>"["+x.Interval[0]+","+x.Interval[1]+"]"))+"]")) + "]";
+
+            if (additionalPythonLines != null)
+            {
+                foreach (var line in additionalPythonLines)
+                {
+                    csvString += "\n " + line;
+                }
+            }
             System.IO.File.WriteAllText(@"C:\Users\LFU\Desktop\tmp\intervals.csv", csvString);
             RunPythonSkript(@"C:\Users\LFU\Documents\GitHub\MinEdgeCover\PythonPlots\plot_intervals.py");
         }

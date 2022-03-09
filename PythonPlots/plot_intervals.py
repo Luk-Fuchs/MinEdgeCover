@@ -8,8 +8,9 @@ import sys
 
 f = open("C:/Users/LFU/Desktop/tmp/intervals.csv", "r")
 
-intervals = eval(f.read())
 plt.figure()
+lines = f.readlines()
+intervals = eval(lines[0])
 plt.xlabel("Uhrzeit")
 plt.ylabel("Dienste")
 for row_index, row in enumerate(intervals):
@@ -30,10 +31,12 @@ for row_index, row in enumerate(intervals):
             plt.plot(x,[row_index,row_index], "g")
 
 
-plt.plot([10000,10000],[1,1],"r" ,label = "ein-teilig")
-plt.plot([10000,10000],[1,1],"y" ,label = "zwei-teilig")
-plt.plot([10000,10000],[1,1],"g" ,label = "drei-teilig")
+plt.plot([0,0],[0,0],"r" ,label = "ein-teilig")
+plt.plot([0,0],[0,0],"y" ,label = "zwei-teilig")
+plt.plot([0,0],[0,0],"g" ,label = "drei-teilig")
 time = [0,6,12,18,24]
 plt.xticks([x*60*60 for x in time],time)
-plt.legend()
+#plt.legend()
+for line in lines[1:]:
+    eval(line)
 plt.show()
