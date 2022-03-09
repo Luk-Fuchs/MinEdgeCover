@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Gurobi;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -9,18 +10,18 @@ namespace _3D_Matching.Solvers
 {
     class RORTS : IMinimumEdgecoveringSolver
     {
-        int additionalNewCalculatedEdges=7;
-        int preCalculationTime=10;
+        int additionalNewCalculatedEdges = 7;
+        int preCalculationTime = 10;
         String mode = "normal";
         Random _random = new Random();
-        public override String Name { get => this.GetType().Name + "(" + additionalNewCalculatedEdges+"|"+preCalculationTime+"|"+mode+")"; }
+        public override String Name { get => this.GetType().Name + "(" + additionalNewCalculatedEdges + "|" + preCalculationTime + "|" + mode + ")"; }
         public RORTS(int additionalNewCalculatedEdges, int preCalculationTime = 10, String mode = "normal")
         {
             this.additionalNewCalculatedEdges = additionalNewCalculatedEdges;
             this.preCalculationTime = preCalculationTime;
             this.mode = mode;
         }
-        public  List<Edge> Run2(Dictionary<string, double> parameters)
+        public List<Edge> Run2(Dictionary<string, double> parameters)
         {
 
             //Es könnte für die geschwindigkeit des MIP solvers zuträglich sein, knoten mit hohem grad zuerst weg zu picken und nicht für die neuberechnung über zu lassen
@@ -115,11 +116,13 @@ namespace _3D_Matching.Solvers
         {
             var verticesCopy = _graph.Vertices.ToList();
             var edgesCopy = _edges.OrderBy(_ => -_.Vertices.Count + _random.NextDouble()).ToList();
+            _graph.SetVertexAdjEdges();
             var edgeCover = new List<Edge>();
             var notFinished = true;
             if (mode == "normal")
             {
-                while (edgesCopy.Count > 300)
+                edgesCopy = _edges.OrderBy(_ => -_.Vertices.Count *100000+_.Vertices.Select(x=>x.AdjEdges.Count).Sum()+ _random.NextDouble()).ToList();
+                while (edgesCopy.Count > 3000)
                 {
                     var edge = edgesCopy[0];
                     edgeCover.Add(edge);
@@ -136,7 +139,8 @@ namespace _3D_Matching.Solvers
                         }
                     }
                 }
-            } else if (mode == "artificalThinning")
+            }
+            else if (mode == "artificalThinning")
             {
                 while (edgesCopy.Count > 300)
                 {
@@ -164,36 +168,69 @@ namespace _3D_Matching.Solvers
                     else
                         edgesCopy.RemoveAt(i);
                 }
-            } else if (mode == "minDegree")
+            }
+            else if (mode == "matchHighDegreeAfterWards")
+            {
+                var highDegreeVertices = _graph.Vertices.OrderBy(_=>-_.AdjEdges.Count).Take(additionalNewCalculatedEdges).ToList();
+                var restrictedEdges = _graph.Edges.Where(_ => _.Vertices.All(x => !highDegreeVertices.Contains(x))).ToList();
+
+                var solver = new MIP(solver: "ORT");
+                solver.initialize(new Graph(restrictedEdges, _graph.Vertices.Where(_=>!highDegreeVertices.Contains(_)).ToList()));
+                var time = new Stopwatch();
+                time.Start();
+                edgeCover = solver.Run(parameters).cover.ToList();
+                time.Stop();
+                Console.WriteLine("partial time: " + time.ElapsedMilliseconds);
+
+                var tmpGraphEdges = edgeCover.ToList(); ;
+                foreach(var edge in _graph.Edges)
+                {
+                    foreach (var vertex in edge.Vertices)
+                    {
+                        if (highDegreeVertices.Contains(vertex)&& (edge.VertexCount==1|| edgeCover.Contains(new Edge(edge.Vertices.Where(_ => _ != vertex).ToList()))))
+                            tmpGraphEdges.Add(edge);
+                    }
+                    if (edge.VertexCount == 2 && highDegreeVertices.Contains(edge.vertex0) && highDegreeVertices.Contains(edge.vertex1))
+                        tmpGraphEdges.Add(edge);
+                }
+                var tmpGraph = new Graph(tmpGraphEdges, _graph.Vertices);
+                tmpGraph.ResetVertexAdjEdges();
+                solver = new MIP();
+                solver.initialize(tmpGraph);
+
+
+                var edgeCover2 = solver.Run(parameters).cover.ToList();
+                ;
+                return (edgeCover2, -1);
+            }
+            else if (mode == "minDegree")
             {
                 var subgraphEdges = new List<Edge>();
                 int minDegree = 3;
+                var degree = new int[verticesCopy.Count];
 
-                var subgraphDegree = new int[verticesCopy.Count];
-                foreach (var vertex in verticesCopy)
+                edgesCopy = _graph.Edges;
+                edgesCopy.Shuffle();
+                var newEdges = new List<Edge>();
+
+                for(int i = 0; i< edgesCopy.Count; i++)
                 {
-                    int i = 0;
-                    while (edgesCopy.Count > i)
+                    var edge = edgesCopy[i];
+                    if ((degree[edge.Vertices[0].Id] < additionalNewCalculatedEdges)
+                        || (edge.Vertices.Count > 1 && degree[edge.Vertices[1].Id] < minDegree)
+                        || (edge.Vertices.Count > 2 && degree[edge.Vertices[2].Id] < minDegree))
                     {
-                        if (subgraphDegree[vertex.Id] >= minDegree)
-                            break;
-
-                        var edge = edgesCopy[i];
-                        if (edge.Vertices.Contains(vertex))
+                        for(int j = 0; j < edge.Vertices.Count; j++)
                         {
-                            edgesCopy.Remove(edge);
-                            subgraphEdges.Add(edge);
-                            foreach (var vertexId in edge.Vertices.Select(_ => _.Id))
-                                subgraphDegree[vertexId]++;
+                            degree[edge.VerticesIds[j]]++;
                         }
-                        else
-                        {
-                            i++;
-                        }
+                        newEdges.Add(edge);
                     }
                 }
-                edgesCopy = subgraphEdges.Concat(edgesCopy.Where(_ => _.Vertices.Count == 1)).ToList();
-            } else if (mode == "partialOptimal")
+
+                edgesCopy = newEdges.Concat(edgesCopy.Where(_=>_.Vertices.Count==1)).ToList();
+            }
+            else if (mode == "partialOptimal")
             {
                 int sizeOfS = 120;
                 var uncoveredVertices = _graph.Vertices.OrderBy(x => _random.Next()).ToList();
@@ -206,15 +243,15 @@ namespace _3D_Matching.Solvers
                     var eEdgesOfS = _edges.Where(_ => _.Vertices.Where(x => !s.Contains(x)).Count() == 0).ToList();
 
                     var solver2 = new MIP();
-                    solver2.initialize(new Graph(eEdgesOfS,s));
+                    solver2.initialize(new Graph(eEdgesOfS, s));
                     var partialRes = solver2.Run(parameters).cover;//).ToList();
-                    if(uncoveredVertices.Count() == 0)
+                    if (uncoveredVertices.Count() == 0)
                     {
                         edgeCover = edgeCover.Concat(partialRes).ToList();
                         notFinished = false;
                         break;
                     }
-                    foreach(var edge in partialRes)
+                    foreach (var edge in partialRes)
                     {
                         if (edge.Vertices.Count == 3)
                         {
@@ -225,13 +262,72 @@ namespace _3D_Matching.Solvers
                     }
                 }
             }
+            else if (mode=="initalSolution")
+            {
+
+                var solver2 = new TwoDBased();
+                solver2.initialize(_graph);
+                var twoDRes = solver2.Run(parameters).cover;
+
+                //_graph.InitializeFor2DMatchin();
+                //var twoDRes = _graph.GetMaximum2DMatching();
+                var edges = _graph.Edges;
+                GRBEnv env = new GRBEnv(true);
+                env.Set("OutputFlag", "0");
+                env.Start();
+
+                GRBModel solver = new GRBModel(env);
+                var x = edges.Select(_ => solver.AddVar(0.0, 1.0, 1.0, GRB.BINARY, String.Join(" ", _.Vertices))).ToArray();
+                for (int i = 0; i < _graph.Vertices.Count; i++)
+                {
+                    //var constraint = solver.MakeConstraint(1, 1, "");
+                    GRBLinExpr expr = 0.0;
+                    for (int j = 0; j < edges.Count; j++)
+                    {
+                        if (edges[j].VerticesIds.Contains(_graph.Vertices[i].Id))
+                            //constraint.SetCoefficient(x[j], 1);
+                            expr.AddTerm(1.0, x[j]);
+                    }
+                    solver.AddConstr(expr, GRB.EQUAL, 1, "c0");
+                }
+
+                for(int i = 0; i< edges.Count; i++)
+                {
+                    if (twoDRes.Contains(edges[i]))
+                    {
+                        x[i].Start = 1;
+                    }
+                    else
+                    {
+                        x[i].Start = 0;
+
+                    }
+                }
+
+
+                solver.Optimize();
+                var res = new List<Edge>();
+                for (int j = 0; j < x.Length; j++)
+                {
+                    if (x[j].X != 0)//Variable(j).SolutionValue() != 0)
+                        res.Add(edges[j]);
+                }
+                return (res, 1);
+            }
+
+
             if (notFinished)
             {
-            var solver = new MIP();
-            solver.initialize(new Graph(edgesCopy,verticesCopy));
-            edgeCover = edgeCover.Concat(solver.Run(parameters).cover).ToList();
+                var time = new Stopwatch();
+                var solver = new MIP();
+                solver.initialize(new Graph(edgesCopy, verticesCopy));
+                time.Start();
+                edgeCover = edgeCover.Concat(solver.Run(parameters).cover).ToList();
+            time.Stop();
+            Console.WriteLine("partial time: " + time.ElapsedMilliseconds);
             }
-            return (edgeCover,-1);
+
+            return (edgeCover, -1);
         }
     }
 }
