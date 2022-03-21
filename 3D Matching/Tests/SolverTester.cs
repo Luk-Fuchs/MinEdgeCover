@@ -16,7 +16,7 @@ namespace _3D_Matching.Tests
         {
 
         }
-        public static String[,] RunSolvers(List<IMinimumEdgecoveringSolver> solvers, Dictionary<String,double> parameter ,String generationType= "readIn", int skip = 0,bool allowAllAsSingle = false,bool removeDegreeOne = true, double iterations = 2, int n=100, double p1 = 0.1, double p2 = 0.1, double p3 = 0.1)
+        public static String[,] RunSolvers(List<IMinimumEdgecoveringSolver> solvers, Dictionary<String,double> parameter ,String generationType= "readIn", int skip = 0,bool allowAllAsSingle = false, bool forceCompletness = false,bool removeDegreeOne = true, bool addAllPossibleEdges = false, double iterations = 2, int n=100, double p1 = 0.1, double p2 = 0.1, double p3 = 0.1)
         {
             var resData = new String[solvers.Count,(int)TestAttribute.Length];
             var time = new Stopwatch();
@@ -27,10 +27,11 @@ namespace _3D_Matching.Tests
                 //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run-1";
                 //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run0";
                 //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run1";
-                String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run2";
+                //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run2";
                 //String path = @"C:\Users\LFU\Desktop\Masterarbeit\UnitTestDaten";
+                String path = @"C:\Users\LFU\Desktop\Data_And_Plots\Graph_Data";
                 string[] filePaths = Directory.GetFiles(path);
-                graphs = Enumerable.Range(0, Math.Min((int)iterations, filePaths.Length)).Select(_ => (Graph.BuildGraphFromCSV(filePaths[_],allowAllAsSingle: allowAllAsSingle, removeDegreeOne: removeDegreeOne))).ToList();
+                graphs = Enumerable.Range(0, Math.Min((int)iterations, filePaths.Length)).Select(_ => (Graph.BuildGraphFromCSV(filePaths[_],allowAllAsSingle: allowAllAsSingle, forceCompletness: forceCompletness, removeDegreeOne: removeDegreeOne, addAllPossibleEdges: addAllPossibleEdges))).ToList();
                 iterations = graphs.Count();
             }
             else
@@ -91,7 +92,7 @@ namespace _3D_Matching.Tests
             foreach (var edge in cover)
             {
                 //if (!graph.Edges.Contains(edge))        //edge is no real edge
-                if (graph.Edges.Where(_ => _.Equals(edge)).ToString().Length == 0)
+                if (graph.Edges.Where(_ => _.Equals(edge)).Count()== 0)
                     throw new Exception("edge is no real edge");
                     //return (false, "edge is no real edge");
                 foreach(var vertex in edge.Vertices)
