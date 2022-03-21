@@ -13,6 +13,8 @@ lines = f.readlines()
 intervals = eval(lines[0])
 plt.xlabel("Uhrzeit")
 plt.ylabel("Dienste")
+
+
 for row_index, row in enumerate(intervals):
     #for x in row:
     #    plt.plot(x,[row_index,row_index])
@@ -31,9 +33,24 @@ for row_index, row in enumerate(intervals):
             plt.plot(x,[row_index,row_index], "g")
 
 
-plt.plot([0,0],[0,0],"r" ,label = "ein-teilig")
-plt.plot([0,0],[0,0],"y" ,label = "zwei-teilig")
-plt.plot([0,0],[0,0],"g" ,label = "drei-teilig")
+for row_index, row in enumerate(intervals):
+    if(len(row)==1):
+        plt.plot(row[0],[row_index,row_index],"r" ,label = "ein-teilig")
+        break
+
+for row_index, row in enumerate(intervals):
+    if(len(row)==2):
+        plt.plot(row[0],[row_index,row_index],"y" ,label = "zwei-teilig")
+        break
+for row_index, row in enumerate(intervals):
+    if(len(row)==3):
+        plt.plot(row[0],[row_index,row_index],"g" ,label = "drei-teilig")
+        break
+
+plt.legend()
+
+#plt.plot([0,0],[0,0],"y" ,label = "zwei-teilig")
+#plt.plot([0,0],[0,0],"g" ,label = "drei-teilig")
 time = [0,6,12,18,24]
 plt.xticks([x*60*60 for x in time],time)
 #plt.legend()
