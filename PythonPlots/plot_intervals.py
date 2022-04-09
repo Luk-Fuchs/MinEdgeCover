@@ -31,7 +31,7 @@ for row_index, row in enumerate(intervals):
             plt.plot(x,[row_index,row_index],"y")
         if(len(row)==3):
             plt.plot(x,[row_index,row_index], "g")
-
+    
 
 for row_index, row in enumerate(intervals):
     if(len(row)==1):
@@ -47,7 +47,7 @@ for row_index, row in enumerate(intervals):
         plt.plot(row[0],[row_index,row_index],"g" ,label = "drei-teilig")
         break
 
-plt.legend()
+plt.legend(loc =2)
 
 #plt.plot([0,0],[0,0],"y" ,label = "zwei-teilig")
 #plt.plot([0,0],[0,0],"g" ,label = "drei-teilig")
