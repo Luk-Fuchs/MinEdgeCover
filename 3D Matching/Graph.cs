@@ -107,7 +107,7 @@ namespace _3D_Matching
             var graph = new Graph(edges, vertices);
             return graph;
         }
-        public static Graph BuildGraphFromCSV(String path, bool allowAllAsSingle = false, bool forceCompletness = false, bool removeDegreeOne = false)
+        public static Graph BuildGraphFromCSV(String path, bool allowAllAsSingle = false, bool forceCompletness = false, bool removeDegreeOne = false, bool addAllPossibleEdges =false)
         { 
             string[] inputLines = System.IO.File.ReadAllLines(path);
 
@@ -123,7 +123,7 @@ namespace _3D_Matching
                 var newVertex = new Vertex(vertexId);
                 newVertex.Interval = activeLine.Split(";")[3].Split(" - ").Select(_ => Int32.Parse(_)).ToArray();
                 vertices.Add(newVertex);
-                if (activeLine.Split(";")[1] == "True" || allowAllAsSingle)
+                if (activeLine.Split(";")[1] == "True")
                     edges.Add(new Edge(new List<Vertex> { newVertex }));
             }
             
@@ -140,35 +140,92 @@ namespace _3D_Matching
 
             var graph = new Graph(edges, vertices);
 
+
             if (removeDegreeOne)
             {
+                int removedVertices = 0;
                 graph.SetVertexAdjEdges();
+                    Console.WriteLine(graph.Vertices.Count);
+                while (vertices.Where(_ => _.AdjEdges.Count <= 1).Count() != 0)
+                {
+                    int i = 0;
+                    while (i < vertices.Count)
+                    {
+                        if (vertices[i].AdjEdges.Count == 0)
+                        {
+                            vertices.RemoveAt(i);
+                        }
+                        else if (vertices[i].AdjEdges.Count == 1 /*&& vertices[i].AdjEdges[0].Vertices.Count == 1*/)
+                        {
+                            var matchedEdge = vertices[i].AdjEdges[0];
+                            foreach (var v in matchedEdge.Vertices)
+                            {
+                                vertices.Remove(v);
+                                removedVertices++;
+                                foreach (var edge in v.AdjEdges)
+                                {
+                                    edges.Remove(edge);
+                                }
+                            }
+                        }
+                        else if (vertices[i].AdjEdges.Count == 1)
+                        {
+                            Console.WriteLine("vertex of degree 1 with edge of size: " + vertices[i].AdjEdges[0].VertexCount);
+                            i++;
+                        }
+                        else
+                        {
+                            i++;
+                        }
+                    }
+                    foreach (var edge in edges)
+                    {
+                        edge.VerticesIds = edge.Vertices.Select(_ => _.Id).ToList();
+                    }
+
+                    for (int index = 0; index < vertices.Count; index++)
+                    {
+                        vertices[index].Id = index;
+                    }
+
+                    foreach (var e in edges)
+                    {
+                        e.VerticesIds = e.Vertices.Select(_ => _.Id).ToList();
+                    }
+                    graph.ResetVertexAdjEdges();
+                    Console.WriteLine(graph.Vertices.Count);
+                }
+                    Console.WriteLine("------------");
+            }
+
+            if (allowAllAsSingle)
+            {
                 int i = 0;
                 while (i < vertices.Count)
                 {
-                    if (vertices[i].AdjEdges.Count == 1 && vertices[i].AdjEdges[0].Vertices.Count==1)
+                    var v = vertices[i];
+                    if( v.AdjEdges[0].VertexCount != 1)
                     {
-                        foreach(var vertex in vertices)
-                        {
-                            if(vertex.Id> vertices[i].Id)
-                            {
-                                vertex.Id--;
-                            }
-                        }
-                        edges.Remove(vertices[i].AdjEdges[0]);
-                        vertices.RemoveAt(i);
+                        edges.Add(new Edge(new List<Vertex>() { v }));
                     }
-                    else
-                    {
-                        i++;
-                    }
+                    i++;
                 }
-                foreach(var edge in edges)
-                {
-                    edge.VerticesIds = edge.Vertices.Select(_ => _.Id).ToList();
-                }
+                graph.ResetVertexAdjEdges();
             }
-            if (forceCompletness)
+
+            if (addAllPossibleEdges)
+            {
+                for (int i = 0; i < graph.Vertices.Count; i++)
+                    for (int j = i+1; j < graph.Vertices.Count; j++)
+                        if (!graph.Vertices[i].Intersects(graph.Vertices[j]))
+                            graph.Edges.Add(new Edge(new List<Vertex>() { graph.Vertices[i], graph.Vertices[j] }));
+                for (int i = 0; i < graph.Vertices.Count; i++)
+                    for (int j = i + 1; j < graph.Vertices.Count; j++)
+                        for (int k = j + 1; k < graph.Vertices.Count; k++)
+                            if (!graph.Vertices[i].Intersects(graph.Vertices[j]) && !graph.Vertices[i].Intersects(graph.Vertices[k]) && !graph.Vertices[k].Intersects(graph.Vertices[j]))
+                                graph.Edges.Add(new Edge(new List<Vertex>() { graph.Vertices[i], graph.Vertices[j], graph.Vertices[k] }));
+            }
+            else if (forceCompletness)
             {
                 foreach (var edge3 in graph.Edges.Where(_ => _.Vertices.Count == 3).ToList())
                 {
@@ -180,15 +237,16 @@ namespace _3D_Matching
                         graph.Edges.Add(new Edge(new List<Vertex> { edge3.vertex0, edge3.vertex2 }));
                 }
             }
+
             graph.ResetVertexAdjEdges();
 
-            Console.WriteLine(graph.Edges.Count);
-            foreach(var edge2 in graph.TwodEdges())
-            {
-                edge2.Expandables();
-                if (edge2.Expandables().Count != 0)
-                    graph.Edges.Remove(edge2);
-            }
+            //Console.WriteLine(graph.Edges.Count);
+            //foreach (var edge2 in graph.TwodEdges())
+            //{
+            //    edge2.Expandables();
+            //    if (edge2.Expandables().Count != 0)
+            //        graph.Edges.Remove(edge2);
+            //}
             var subedgeComposition = new int[4];
             foreach(var edge3 in graph.Edges.Where(_ => _.Vertices.Count == 3))
             {
@@ -201,10 +259,29 @@ namespace _3D_Matching
                     subedges--;
                 subedgeComposition[subedges]++;
             }
-            Console.WriteLine("subedgeInfo: " +String.Join("|",subedgeComposition));
+            //Console.WriteLine("subedgeInfo: " + String.Join("|", subedgeComposition));
             //Console.WriteLine(edges.Where(_ => _.VertexCount == 2).Count());
             //Console.WriteLine(edges.Where(_ => _.VertexCount == 3).Count());
-            Console.WriteLine(graph.Edges.Count);
+            //Console.WriteLine(graph.Edges.Count);
+            //Console.WriteLine(graph.Vertices.Count);
+
+            graph.SetVertexAdjEdges();
+
+            //Console.Write(graph.Edges.Where(_=>_.VertexCount==3).Count()+",");
+
+
+            //var vs = graph.Vertices.OrderBy(_ => _.AdjEdges.Count).ToList();
+            //var bars = vs.Select(_ => _.Adj3Edges.Where(e3 => (_.Adj2Edges.Contains(new Edge(new List<Vertex> { e3.vertex0, e3.vertex1 }))
+            //                                                  || _.Adj2Edges.Contains(new Edge(new List<Vertex> { e3.vertex0, e3.vertex2 }))
+            //                                                  || _.Adj2Edges.Contains(new Edge(new List<Vertex> { e3.vertex1, e3.vertex2 })))).Count()).ToList();
+            ////var bars = vs.Select(_ => _.Adj3Edges.Where(e3 => graph.Edges.Contains(new Edge(e3.Vertices.Where(v=>v!=_).ToList()))).Count()).ToList();
+            //var s = "[" + String.Join(",",bars) +"]";
+            //Console.WriteLine(s);
+
+
+
+
+
             return graph;
         }
         public static Graph BuildGraphString(String vertexCountAndEdges)
@@ -257,6 +334,81 @@ namespace _3D_Matching
             //    foreach (var vertex in edge.Vertices)
             //        vertex.AdjEdges.Add(edge);
         }
+        public bool IsEdge(Vertex vertex0, Vertex vertex1)
+        {
+            if (vertex0.Id > vertex1.Id)
+            {
+                var tmp = vertex0;
+                vertex0 = vertex1;
+                vertex1 = tmp;
+            }
+
+            if (vertex0.Adj2Edges.Count < vertex1.Adj2Edges.Count)
+            {
+                for (int i = vertex0.Adj2Edges.Count - 1; i >= 0; i--)
+
+                {
+                    if (vertex0.Adj2Edges[i].vertex1 == vertex1)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < vertex1.Adj2Edges.Count; i++)
+                {
+                    if (vertex1.Adj2Edges[i].vertex0 == vertex0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+        public bool IsEdge(Vertex vertex0, Vertex vertex1, Vertex vertex2)
+        {
+
+            if (vertex0.Id > vertex1.Id)
+            {
+                var tmp = vertex0;
+                vertex0 = vertex1;
+                vertex1 = tmp;
+            }
+            if (vertex0.Id > vertex2.Id)
+            {
+                var tmp = vertex0;
+                vertex0 = vertex2;
+                vertex2 = tmp;
+            }
+            if (vertex1.Id > vertex2.Id)
+            {
+                var tmp = vertex1;
+                vertex1 = vertex2;
+                vertex2 = tmp;
+            }
+
+
+            var edges3 = vertex0.Adj3Edges;
+            if (vertex1.Adj3Edges.Count < edges3.Count)
+            {
+                edges3 = vertex1.Adj3Edges;
+            }
+            if (vertex2.Adj3Edges.Count < edges3.Count)
+            {
+                edges3 = vertex2.Adj3Edges;
+            }
+
+            for(int i = 0; i< edges3.Count; i++)
+            {
+                if(edges3[i].vertex0 == vertex0 && edges3[i].vertex1 == vertex1 && edges3[i].vertex2 == vertex2)
+                {
+                    return true;
+                } 
+            }
+            return false;
+        }
         public (int amount, int time) CalculatePeakTime(List<Vertex> vertices = null)
         {
             if (vertices == null)
@@ -277,13 +429,40 @@ namespace _3D_Matching
             var max = count.Max();
             return (max, potentialPeakTimes[Array.IndexOf(count, max)]);
         }
-
+        public (int amount, int time) CalculateLowTime(List<Vertex> vertices = null)
+        {
+            if (vertices == null)
+                vertices = Vertices;
+            var potentialPeakTimes = vertices.SelectMany(_ => _.Interval).Distinct().OrderBy(_ => _).ToList();
+            var count = new int[potentialPeakTimes.Count];
+            foreach (var vertex in vertices)
+            {
+                for (int i = 0; i < count.Length; i++)
+                {
+                    if (potentialPeakTimes[i] < vertex.Interval[0])
+                        continue;
+                    if (potentialPeakTimes[i] > vertex.Interval[1])
+                        break;
+                    count[i]++;
+                }
+            }
+            var min = count.Where(_=>_>0).Min();
+            return (min, potentialPeakTimes[Array.IndexOf(count, min)]);
+        }
+        
         public Graph GenerateInducedSubgraph(List<Edge> toOptimizeEdges)
         {
-            var tmpVertices = toOptimizeEdges.SelectMany(_ => _.Vertices);
+            var tmpVertices = toOptimizeEdges.SelectMany(_ => _.Vertices).Distinct();
             //Maybe remove duplicate
             var tmpEdges = Edges.Where(_ => _.Vertices.Where(x => tmpVertices.Contains(x)).Count() == _.Vertices.Count).ToList();
             var tmpGraph = new Graph(tmpEdges, tmpVertices.ToList());
+            return tmpGraph;
+        }
+        public Graph GenerateSubgraph(List<Edge> subgraphEdges)
+        {
+            var tmpVertices = subgraphEdges.SelectMany(_ => _.Vertices).Distinct();
+            //Maybe remove duplicate
+            var tmpGraph = new Graph(subgraphEdges, tmpVertices.ToList());
             return tmpGraph;
         }
         public Graph GenerateInducedSubgraph(List<Vertex> inducedVertices)
@@ -893,6 +1072,8 @@ namespace _3D_Matching
             for (int i = 0; i < neighbouhood.Count; i++)
             {
                 var neighbour = neighbouhood[i];
+                if (neighbour.IsContracted)
+                    continue;
                 if (neighbour.MatchedVertex == null && neighbour != newRoot)
                 {
                     Augment(plusTreeVertices, activeVertex, neighbour);
@@ -1231,6 +1412,10 @@ namespace _3D_Matching
         public int treeIndex;
         private List<Vertex> _expandables;
 
+        public int inedex;
+
+        public bool canBeInPerfectMatching = false;
+
         public List<Vertex> Expandables()
         {
             if (this.Vertices.Count != 2)
@@ -1364,6 +1549,7 @@ namespace _3D_Matching
             }
             return true;
         }
+
         public bool AllVerticesAreCoveredAtleastTwice()
         {
             for (int i = 0; i < Vertices.Count; i++)
@@ -1391,7 +1577,7 @@ namespace _3D_Matching
             return i;
         }
 
-        internal bool ContainsTime(int time)
+        public bool ContainsTime(int time)
         {
             foreach(var vertex in Vertices)
             {
@@ -1415,7 +1601,9 @@ namespace _3D_Matching
         public Vertex ContractedWith;
         public Vertex ContractedVertex;
 
-        public int skip = 0; 
+        public int intersectionNumber;
+
+        public List<Vertex> ForbiddenSuccessessors;
         public bool IsCovered = false;
         public int TimesCovered = 0;
         public int[] Interval;
@@ -1467,6 +1655,19 @@ namespace _3D_Matching
         internal bool ContainsTime(int time)
         {
             return Interval[0] <= time && Interval[1] >= time;
+        }
+        public bool Intersects(Vertex otherVertex)
+        {
+            if(Interval[0]<=otherVertex.Interval[0] && Interval[1] >= otherVertex.Interval[0])
+            {
+                return true;
+            }
+            if (otherVertex.Interval[0] <= Interval[0] && otherVertex.Interval[1] >= Interval[0])
+            {
+                return true;
+            }
+            return false;
+
         }
     }
 }
