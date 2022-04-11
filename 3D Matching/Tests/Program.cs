@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Diagnostics;
+
 
 
 namespace _3D_Matching
@@ -14,38 +16,83 @@ namespace _3D_Matching
         static void Main(string[] args)
         {
 
+            
+
             var parameters = new Dictionary<String, double>();
-            parameters.Add("maxTime", 700);
-            parameters.Add("maxIter", 300);
+            parameters.Add("maxTime", 5000);
+            parameters.Add("maxIter", 1_00000);
             int n = 300;        //320
             double p3 = 0.01;
             double p2 = 0.1;
             double p1 = 0.5;
-            int iterations = 10;
+            int iterations = 1;
             int skip = 0;
 
+            var random = new Random();
 
 
 
 
-            var solvers = new List<IMinimumEdgecoveringSolver> {
+
+            var solvers = new List<IMinimumPerfectMatchingSolver> {
+
+                //---------------- GREEDY SECTION -----------------
+                //new Greedy(GreedyModi.byTime),
+                //new Greedy(GreedyModi.withExplizitBadPairing),
+                //new Greedy(GreedyModi.byTimeReverse),
+                //new Greedy(GreedyModi.bySize),
+                //new Greedy(GreedyModi.bySizeAndDegreeUpdating),
+                //new Greedy(GreedyModi.bySizeAndNeighbourhoodSize),
+                //new Greedy(GreedyModi.byPeak),
+                new Greedy(GreedyModi.byIntegral),
+                //new Greedy(GreedyModi.variable,new Func<Edge, double>(_=>-_.VertexCount*100000 +_.Vertices.SelectMany(v=>v.AdjEdges.SelectMany(e=>e.Vertices)).Distinct().Count())),
+
+                ////hybride Greedy Ansätze mit verscheidenen Kostfunktionen:
+                //    //Size (hybrid)
+                //new Greedy(GreedyModi.variableHybrid,new Func<Edge, double>(_=>-_.VertexCount*100000 -random.NextDouble())),
+                //    //Size and Degree
+                //new Greedy(GreedyModi.variableHybrid,new Func<Edge, double>(_=>-_.VertexCount*100000 - _.Vertices.Select(v=>v.AdjEdges.Count).Sum())),
+                //    //Size and short dutys
+                //new Greedy(GreedyModi.variableHybrid,new Func<Edge, double>(_=>-_.Vertices.Last().Interval[1]+_.Vertices[0].Interval[0])),
+                //    //Size and 2-Degree
+                //new Greedy(GreedyModi.variableHybrid,new Func<Edge, double>(_=>-_.VertexCount*100000 + _.Vertices.Select(v=>v.Adj2Edges.Count).Sum())),
+                //    //Size and NeighbourhoodSize
+                //new Greedy(GreedyModi.variableHybrid,new Func<Edge, double>(_=>-_.VertexCount*100000 +_.Vertices.SelectMany(v=>v.AdjEdges.SelectMany(e=>e.Vertices)).Distinct().Count())),
+
+
+                //---------------- Genetic SECTION -----------------
+                //new Genetic(GeneticModi.permuteAllEdges),
+                //new Genetic(GeneticModi.permuteAll2EdgesAndUnion),
+                //new Genetic(GeneticModi.permuteAll3EdgesAndFillOptimal),
+                //new Genetic(GeneticModi.random3EdgesAndFillOptimal),
+
+
+                //---------------- ModifiedMIP SECTION -----------------
+                new MMIP(MMIPModi.inducedSubgraphs),
+                new MMIP(MMIPModi.relaxation),
+                
+                //---------------- MIP SECTION -----------------
+                new MIP(MIPModi.GUROBI),
+                new MIP(MIPModi.COINOR),
+                new MIP(MIPModi.ORT),
+
+
 
                 //-----------------TEST SECTION------------------
+                //new TwoDBased(),
+                //new TwoDBased(),
+                //new HC(climbMode: "boundedDepth"),
+                //new PeakPairing(),
+                //new TwoDBased(),
+                //new PeakPairing(),
+                //new TwoDBased("DynamicContraction"),
+                //new OnlineSolver(),
+                //new TwoDBased(),
+                //new TwoDBased("2DContractHyprid"),
 
 
 
 
-
-
-
-                //--------------------WORKS OK----------------
-                //new Genetic(precalc: true),
-                //new Genetic(precalc: false),
-                //new Greedy(mode: "byDegreeUpdating_V3"),
-                //new RORTS(30 , mode: "withoutHighDegreeVertices"),
-
-
-                //-------------------WORKS BAD (TIME)--------------------
                 //new TwoDBased(type: "2DContractTest", newCalc:20, randomContract: false),
                 //new TwoDBased(type: "2DContractTest", newCalc:20, randomContract: true),
                 //new HC(climbMode: "allNotOptimal",maxEdgeSwapSize:7),
@@ -54,46 +101,15 @@ namespace _3D_Matching
                 //new HC(maxEdgeSwapSize:20),
                 //new HC(maxEdgeSwapSize:25),
                 //new HC(maxEdgeSwapSize:30),
-                //new Greedy(mode: "byNeighbourhoodSize"),
-                //new Greedy(mode: "byDegreeUpdating"),
 
-                //-------------------WORKS BAD (SIZE)--------------------
-                //new BAB(),
-                //new Greedy("byDegree"),
-                //new Greedy(mode: "byDegreeUpdatingAndMinSumSorting", sizeWeight: 4, variation: 2),
-
-
-                //-----------DOESNT WORK YET (NO REAL MATCHING)----------
-                //new TwoDBased(type: "noAugmentation"),
-                //new TwoDBased(type: "randomSplitAndAugmentOnceByOnce"),
-                //new PeakPairing(),
-                //new Constructive(),
-                //new RORTS(0,preCalculationTime:20),
-                //new RORTS(10,preCalculationTime:20),
-                //new RORTS(5,preCalculationTime:20,mode:"partialOptimal"),
-                //new RORTS(20,preCalculationTime:20,mode:"artificalThinning"),
-                //new OnlineSolver(true),
-                //new OnlineSolver(false),
-                //new OnlineSolver(true,criterion: "firstTimePeak"),
-                //new OnlineSolver(true,criterion: "firstTimeByDeg"),
-                //new HC(maxEdgeSwapSize:15),
-                //new HC(climbMode: "alternatingPaths"),
-                //new SAS(500),
-                //new RORTS(5,preCalculationTime:20, mode:"minDegree"),
-
-
-
-
-
-
-
-                new ORTS(),
             };
 
-            //for (int i = 0; i < 80; i++)
-            //    solvers.Add(new TwoDBased(type: "2DContractTest", newCalc: i));
-            //for (int i = 5; i < 350; i++)
-            //    solvers.Add(new RORTS(0, mode: "partialOptimalOnInducesSubgraphs", subgaphSize: i));
+
+
+
+            //for (int i = 0; i < 11; i++)
+            //    solvers.Add(new MIP(usePerc3D: 1 - 0.1 * i));
+
 
             var data = SolverTester.RunSolvers(solvers,
                                                 parameters,
@@ -101,13 +117,16 @@ namespace _3D_Matching
                                                 skip: skip,
                                                 allowAllAsSingle: true,
                                                 removeDegreeOne: true,
+                                                forceCompletness: false,
+                                                addAllPossibleEdges: false,
                                                 iterations: iterations,
                                                 n: n, p1: p1, p2: p2, p3: p3);
 
+
+            //Console.WriteLine(String.Join(",", TwoDBased.valuePerIteration.Select(_=>((_+0.0)/20).ToString().Replace(",","."))));
+            //Console.WriteLine(String.Join(",", MMIP.auslastung));
+
             PrintData(data);
-
-
-
         }
 
         public static void PrintData(String[,] data)

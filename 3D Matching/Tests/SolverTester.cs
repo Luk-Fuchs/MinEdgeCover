@@ -9,30 +9,22 @@ using System.Threading.Tasks;
 
 namespace _3D_Matching.Tests
 {
-    class SolverTester
+    public class SolverTester
     {
 
         public SolverTester()
         {
 
         }
-        public static String[,] RunSolvers(List<IMinimumEdgecoveringSolver> solvers, Dictionary<String,double> parameter ,String generationType= "readIn", int skip = 0,bool allowAllAsSingle = false, bool forceCompletness = false,bool removeDegreeOne = true, bool addAllPossibleEdges = false, double iterations = 2, int n=100, double p1 = 0.1, double p2 = 0.1, double p3 = 0.1)
+        public static String[,] RunSolvers(List<IMinimumPerfectMatchingSolver> solvers, Dictionary<String, double> parameter, String generationType = "readIn", int skip = 0, bool allowAllAsSingle = false, bool forceCompletness = false, bool removeDegreeOne = true, bool addAllPossibleEdges = false, double iterations = 2, int n = 100, double p1 = 0.1, double p2 = 0.1, double p3 = 0.1)
         {
-            var resData = new String[solvers.Count,(int)TestAttribute.Length];
+            var resData = new String[solvers.Count, (int)TestAttribute.Length];
             var time = new Stopwatch();
             iterations += skip;
             var graphs = new List<Graph>();
-            if(generationType == "readIn")
+            if (generationType == "readIn")
             {
-                //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run-1";
-                //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run0";
-                //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run1";
-                //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run2";
-                //String path = @"C:\Users\LFU\Desktop\Masterarbeit\UnitTestDaten";
-                String path = @"C:\Users\LFU\Desktop\Data_And_Plots\Graph_Data";
-                string[] filePaths = Directory.GetFiles(path);
-                graphs = Enumerable.Range(0, Math.Min((int)iterations, filePaths.Length)).Select(_ => (Graph.BuildGraphFromCSV(filePaths[_],allowAllAsSingle: allowAllAsSingle, forceCompletness: forceCompletness, removeDegreeOne: removeDegreeOne, addAllPossibleEdges: addAllPossibleEdges))).ToList();
-                iterations = graphs.Count();
+                graphs = RunGraphGeneration(allowAllAsSingle, forceCompletness, removeDegreeOne, addAllPossibleEdges, iterations);
             }
             else
             {
@@ -42,6 +34,9 @@ namespace _3D_Matching.Tests
             graphs = graphs.Skip(skip).ToList();
 
             iterations = graphs.Count;
+
+            //try
+            //{
             for (int i = 0; i < solvers.Count; i++)
             {
                 double totalIterations = 0.0;
@@ -57,14 +52,14 @@ namespace _3D_Matching.Tests
 
                     time.Start();
                     solver.initialize(graph);
-                    (var edgeCover, double used_iterations)= solver.Run(parameter);
+                    (var edgeCover, double used_iterations) = solver.Run(parameter);
                     time.Stop();
 
                     totalEdgeCount += edgeCover.Count;
                     totalIterations += used_iterations;
                     if (!IsCover(graph, edgeCover).Item1)
                         Console.WriteLine(IsCover(graph, edgeCover).Item2 + "multipleCovers");
-                    for(int size = 1; size < 4; size++)
+                    for (int size = 1; size < 4; size++)
                     {
                         edgeSizes[size - 1] += edgeCover.Where(_ => _.Vertices.Count == size).Count();
                     }
@@ -72,18 +67,40 @@ namespace _3D_Matching.Tests
                     multipleTimesCoveredVertices += IsCover(graph, edgeCover).Item2;
                 }
                 time.Stop();
-                resData[i, (int)TestAttribute.Time] = Math.Round(time.ElapsedMilliseconds / iterations ,0) + "";
+                resData[i, (int)TestAttribute.Time] = Math.Round(time.ElapsedMilliseconds / iterations, 0) + "";
                 resData[i, (int)TestAttribute.Name] = solvers[i].Name;
-                resData[i, (int)TestAttribute.Edges] = Math.Round(totalEdgeCount / iterations,4) + "";
+                resData[i, (int)TestAttribute.Edges] = Math.Round(totalEdgeCount / iterations, 4) + "";
                 resData[i, (int)TestAttribute.Iter] = totalIterations / iterations + "";
                 resData[i, (int)TestAttribute.MultCov] = multipleTimesCoveredVertices / iterations + "";
-                resData[i, (int)TestAttribute.CoverComp] = (int)(edgeSizes[0] / iterations) + "|"+ (int)(edgeSizes[1] / iterations) + "|"+ (int)(edgeSizes[2] / iterations) + "|";
+                resData[i, (int)TestAttribute.CoverComp] = (int)(edgeSizes[0] / iterations) + "|" + (int)(edgeSizes[1] / iterations) + "|" + (int)(edgeSizes[2] / iterations) + "|";
+
+                System.IO.File.AppendAllText(@"C:\Users\LFU\Desktop\güte.txt", (Math.Round(totalEdgeCount / iterations, 4) + "").Replace(",", ".") + ",");
             }
+            //}
+            //catch (Exception e)
+            //{
+            //    System.IO.File.AppendAllText(@"C:\Users\LFU\Desktop\error.txt", e.ToString());
+            //}
+
 
             return resData;
 
         }
-        
+
+        public static List<Graph> RunGraphGeneration(bool allowAllAsSingle, bool forceCompletness, bool removeDegreeOne, bool addAllPossibleEdges, double iterations)
+        {
+            List<Graph> graphs;
+            //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run-1";
+            //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run0";
+            //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run1";
+            //String path = @"C:\Users\LFU\Documents\GitHub\MinEdgeCover\LFU-Tmp_Run2";
+            //String path = @"C:\Users\LFU\Desktop\Masterarbeit\UnitTestDaten";
+            String path = @"C:\Users\LFU\Desktop\Data_And_Plots\Graph_Data";
+            string[] filePaths = Directory.GetFiles(path);
+            graphs = Enumerable.Range(0, Math.Min((int)iterations, filePaths.Length)).Select(_ => (Graph.BuildGraphFromCSV(filePaths[_], allowAllAsSingle: allowAllAsSingle, forceCompletness: forceCompletness, removeDegreeOne: removeDegreeOne, addAllPossibleEdges: addAllPossibleEdges))).ToList();
+            iterations = graphs.Count();
+            return graphs;
+        }
 
         public static (bool,double) IsCover(Graph graph, List<Edge> cover)
         {
