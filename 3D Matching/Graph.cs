@@ -145,7 +145,7 @@ namespace _3D_Matching
             {
                 int removedVertices = 0;
                 graph.SetVertexAdjEdges();
-                    Console.WriteLine(graph.Vertices.Count);
+                    //Console.WriteLine(graph.Vertices.Count);
                 while (vertices.Where(_ => _.AdjEdges.Count <= 1).Count() != 0)
                 {
                     int i = 0;
@@ -193,9 +193,9 @@ namespace _3D_Matching
                         e.VerticesIds = e.Vertices.Select(_ => _.Id).ToList();
                     }
                     graph.ResetVertexAdjEdges();
-                    Console.WriteLine(graph.Vertices.Count);
+                    //Console.WriteLine(graph.Vertices.Count);
                 }
-                    Console.WriteLine("------------");
+                    //Console.WriteLine("------------");
             }
 
             if (allowAllAsSingle)
@@ -248,17 +248,31 @@ namespace _3D_Matching
             //        graph.Edges.Remove(edge2);
             //}
             var subedgeComposition = new int[4];
+            int fm = 0;
+            int fl = 0;
+            int ml = 0;
             foreach(var edge3 in graph.Edges.Where(_ => _.Vertices.Count == 3))
             {
-                var subedges = 3;
-                if (edge3.vertex0.Get2DEdgeBetween(edge3.vertex1) == null)
-                    subedges--;
-                if(edge3.vertex2.Get2DEdgeBetween(edge3.vertex1) == null)
-                    subedges--;
-                if(edge3.vertex0.Get2DEdgeBetween(edge3.vertex2) == null)
-                    subedges--;
+                var subedges = 0;
+                if (edge3.vertex0.Get2DEdgeBetween(edge3.vertex1) != null)
+                {
+                    subedges++;
+                    fm++;
+                }
+                if(edge3.vertex2.Get2DEdgeBetween(edge3.vertex1) != null)
+                {
+                    subedges++;
+                    ml++;
+                }
+                if(edge3.vertex0.Get2DEdgeBetween(edge3.vertex2) != null)
+                {
+                    subedges++;
+                    fl++;
+                }
                 subedgeComposition[subedges]++;
             }
+
+            //Console.WriteLine($"fm: {fm} fl: {fl} ml: {ml}");
             //Console.WriteLine("subedgeInfo: " + String.Join("|", subedgeComposition));
             //Console.WriteLine(edges.Where(_ => _.VertexCount == 2).Count());
             //Console.WriteLine(edges.Where(_ => _.VertexCount == 3).Count());
