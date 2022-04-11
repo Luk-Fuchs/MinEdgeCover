@@ -9,13 +9,14 @@ using System.Threading.Tasks;
 
 namespace _3D_Matching.Tests
 {
-    class Plot
+    public class Plot
     {
+        static string _currentFile = @"C:\Users\LFU\Desktop\Masterarbeit\Ausarbeitung\images\Data_And_Plots\Plots_Online\size_by_iteration.txt";
         public static void CreateFigure(IEnumerable<double> yValue, IEnumerable<double> xValue = null, String title = "", String xLable = "", String yLable = "", String plottype = "bar", bool show = true, String horizontal = "", String vertical = "")
         {
             var csvDataString = "";
-            csvDataString += (xValue == null ? String.Join(",", Enumerable.Range(0, yValue.Count())) : String.Join(",", yValue)) + ";";
-            csvDataString += String.Join(",", yValue);
+            csvDataString += (xValue == null ? String.Join(",", Enumerable.Range(0, yValue.Count())) : String.Join(",", xValue.Select(_ => _.ToString().Replace(",", ".")))) + ";";
+            csvDataString += String.Join(",", yValue.Select(_=>_.ToString().Replace(",",".")));
             System.IO.File.WriteAllText(@"C:\Users\LFU\Desktop\tmp\values.csv", csvDataString);
 
 
@@ -33,7 +34,8 @@ namespace _3D_Matching.Tests
         public static void CreateIntervals(List<Edge> cover, bool reorde = false, List<String> additionalPythonLines = null)
         {
             if (reorde)
-                cover = cover.OrderBy(_ => _.Vertices.Min(x => x.Interval[0])).ToList();
+                //cover = cover.OrderBy(_ => _.Vertices.Min(x => x.Interval[0])).ToList();
+                cover = cover.OrderBy(_ => -_.Vertices.Max(x => x.Interval[1])).ToList();
             var csvString = "[" + String.Join(",", cover.Select(_ => "[" + String.Join(",", _.Vertices.Select(x => "[" + x.Interval[0] + "," + x.Interval[1] + "]")) + "]")) + "]";
 
             if (additionalPythonLines != null)
@@ -53,7 +55,14 @@ namespace _3D_Matching.Tests
             RunPythonSkript(@"C:\Users\LFU\Documents\GitHub\MinEdgeCover\PythonPlots\execute_string.py");
         }
 
-
+        public static void AddLine (string line)
+        {
+            System.IO.File.AppendAllLines(_currentFile,new string[] {line });
+        }
+        public static void RunCurrentFile()
+        {
+            ExecuteLines(System.IO.File.ReadAllLines(_currentFile).ToList());
+        }
 
         private static void RunPythonSkript(string fileToExecute)
         {
@@ -97,7 +106,7 @@ namespace _3D_Matching.Tests
             {
                 solutionBound.AddTerm(1.0, x[j]);
             }
-            solver.AddConstr(solutionBound, GRB.GREATER_EQUAL, matching.Count-1, "c0");
+            solver.AddConstr(solutionBound, GRB.GREATER_EQUAL, matching.Count - 1, "c0");
 
             solver.Optimize();
             var res = new List<Edge>();
