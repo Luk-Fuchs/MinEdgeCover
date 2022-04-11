@@ -26,6 +26,8 @@
     <Compile Include="interval_graph_tests.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="execute_string.py" />
+    <Compile Include="plot_intervals.py" />
     <Compile Include="plot_results.py" />
     <Compile Include="plot.py" />
   </ItemGroup>
