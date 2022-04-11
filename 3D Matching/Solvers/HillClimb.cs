@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace _3D_Matching.Solvers
 {
-    class HC : IMinimumEdgecoveringSolver
+    class HC : IMinimumPerfectMatchingSolver
     {
         int preCalculationTime=10;
         int maxEdgeSwapSize;
@@ -31,7 +31,7 @@ namespace _3D_Matching.Solvers
             time.Start();
 
 
-            IMinimumEdgecoveringSolver solver;
+            IMinimumPerfectMatchingSolver solver;
             if (precalculationMode == "normal")
                 solver = new OnlineSolver(true);// Greedy();
             else

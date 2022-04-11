@@ -19,7 +19,7 @@ namespace _3D_Matching.Solvers
         relaxation,
         inducedSubgraphs,
     }
-    class MMIP : IMinimumEdgecoveringSolver
+    class MMIP : IMinimumPerfectMatchingSolver
     {
         public static int[] auslastung = new int[9500];
         int additionalNewCalculatedEdges = 7;

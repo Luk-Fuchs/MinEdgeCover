@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace _3D_Matching.Solvers
 {
-    public abstract class IMinimumEdgecoveringSolver
+    public abstract class IMinimumPerfectMatchingSolver
     {
         public virtual String Name { get => this.GetType().Name; }
         public Graph _graph;

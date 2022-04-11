@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace _3D_Matching.Solvers
 {
-    class SAS : IMinimumEdgecoveringSolver
+    class SAS : IMinimumPerfectMatchingSolver
     {
         Random _random = new Random();
         double _decay = 500;

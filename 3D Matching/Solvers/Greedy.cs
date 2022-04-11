@@ -23,7 +23,7 @@ namespace _3D_Matching.Solvers
         variable,
         variableHybrid,
     }
-    class Greedy : IMinimumEdgecoveringSolver
+    class Greedy : IMinimumPerfectMatchingSolver
     {
 
         Random _random = new Random();
@@ -185,12 +185,25 @@ namespace _3D_Matching.Solvers
                 var remainingEdges = _edges.ToList();
 
 
+                (var xValuesAtBeginning, var yValuesAtBeginning) = ComputeOverlapGraph(remainingEdges);
+                        Console.WriteLine("["+String.Join(",",xValuesAtBeginning)+"]");
+                Console.WriteLine();
+                Console.WriteLine();
+
                 int i = 0;
                 while (remainingEdges.Count > 0)
                 {
-                    Console.WriteLine(remainingEdges.Count);
+                    if (i % 20 == 0)
+                    {
+                        var(x,y)=ComputeOverlapGraph(remainingEdges, xValuesAtBeginning);
+                        Console.Write("["+String.Join(",",y)+"],");
+                    }
+                    i++;
+
+                    //Console.WriteLine(remainingEdges.Count);
                     (var xValues, var yValues) = ComputeOverlapGraph(remainingEdges);
                     var orderedRemainingEdges = remainingEdges.OrderBy(_ => -ComputeIntergral(xValues.ToList(), yValues, _)).ToList();
+                    //var orderedRemainingEdges = remainingEdges.OrderBy(_ => -ComputeIntergral(xValues.ToList(), yValues.Select(_ => _ * _).ToArray(), _)).ToList();
                     var newMatchingEdge = orderedRemainingEdges[0];
                     res.Add(newMatchingEdge);
                     var coveredVertices = newMatchingEdge.Vertices;
@@ -198,7 +211,7 @@ namespace _3D_Matching.Solvers
                     remainingEdges = remainingEdges.Where(_ => _.Vertices.Intersect(coveredVertices).Count() == 0).ToList();
                 }
 
-                Plot.CreateIntervals(res, false, new List<string>() { "plt.title(\"Priorisierung mittels Integration mit " + res.Count + " entstandenen Diensten \")" });
+                //Plot.CreateIntervals(res, false, new List<string>() { "plt.title(\"Priorisierung mittels Integration mit " + res.Count + " entstandenen Diensten \")" });
                 //Plot.CreateIntervals(res);
                 return (res, -1);
             }
@@ -372,45 +385,47 @@ namespace _3D_Matching.Solvers
             if (_mode == GreedyModi.byPeak) //nicht effizient, nur für plots
             {
 
-                var xValues = _graph.Vertices.SelectMany(_ => _.Interval).ToList();
-                xValues = xValues.OrderBy(_ => _).ToList();
-                Console.WriteLine(String.Join(",", xValues));
-                Console.WriteLine("----------------");
+                (var xValuesAtBeginning, var yValuesAtBeginning) = ComputeOverlapGraph(_edges);
+                Console.WriteLine("[" + String.Join(",", xValuesAtBeginning) + "]");
+                Console.WriteLine();
+                Console.WriteLine();
+
                 var res = new List<Edge>();
-                var firtstTime = true;
                 var edgesCopy = _edges.ToList();
                 var tmpGraph = _graph.GenerateInducedSubgraph(edgesCopy);
                 var edgesSize = new List<double>();
-                int round = 0;
+                int j = 0;
                 while (edgesCopy.Count != 0)
                 {
+                    if (j % 20 == 0)
+                    {
+                        var (_, y) = ComputeOverlapGraph(edgesCopy, xValuesAtBeginning);
+                        Console.Write("[" + String.Join(",", y) + "],");
+                    }
+                    j++;
                     tmpGraph.ResetVertexAdjEdges();
-                    var peakTime = tmpGraph.CalculatePeakTime(_graph.Vertices.Where(_ => _.IsCovered == false).ToList()).time;
+                    var peakTime = tmpGraph.CalculatePeakTime().time;
+                    //var peakTime = tmpGraph.CalculatePeakTime(_graph.Vertices.Where(_ => _.IsCovered == false).ToList()).time;
                     var lowTime = _graph.CalculateLowTime(_graph.Vertices.Where(_ => _.IsCovered == false).ToList()).time;
                     edgesCopy = tmpGraph.Edges.OrderBy(_ => (_.ContainsTime(peakTime) ? -100000000000 : +10000000000) - _.VertexCount * 10000 + _.Vertices.Select(_ => _.AdjEdges.Count).Sum()).ToList();
                     //edgesCopy = tmpGraph.Edges.OrderBy(_ => (_.ContainsTime(lowTime) ? -100000000000 : +10000000000) - _.VertexCount + 10000 * _.Vertices.Select(_ => _.AdjEdges.Count).Min()).ToList();
                     //edgesCopy = tmpGraph.Edges.OrderBy(_ => -_.VertexCount *10000- 100000000*_.Vertices.Select(v=>v.hardness).Max() +_.Vertices.Select(_=>_.AdjEdges.Count).Sum()).ToList();
                     edgesSize.Add(edgesCopy.Count);
-                    for (int i = 0; i < edgesCopy.Count; i++)
+
+                    var newMatchingEdge = edgesCopy[0];
+                    res.Add(newMatchingEdge);
+
+                    foreach (var vertex in newMatchingEdge.Vertices)
                     {
-                        var edge = edgesCopy[i];
-                        if (edge.AllVerticesAreUncovered())
-                        {
-                            res.Add(edge);
-                            foreach (var vertex in edge.Vertices)
-                            {
-                                vertex.IsCovered = true;
-                            }
-                            break;
-                        }
+                        vertex.IsCovered = true;
                     }
                     edgesCopy = edgesCopy.Where(_ => _.AllVerticesAreUncovered()).ToList();
-                    //tmpGraph.Edges = edgesCopy;
-                    //tmpGraph = tmpGraph.GenerateInducedSubgraph(edgesCopy);
-                    Console.WriteLine(tmpGraph.Vertices.Count);
+                    tmpGraph.Edges = edgesCopy;
+                    tmpGraph = tmpGraph.GenerateInducedSubgraph(edgesCopy);
+                    //Console.WriteLine(tmpGraph.Vertices.Count);
 
                 }
-                Plot.CreateIntervals(res, false, new List<string>() { $"plt.title(\"Priorisierung von Kanten im Peak mit {res.Count} resultierenden Diensten\")" });
+                //Plot.CreateIntervals(res, false, new List<string>() { $"plt.title(\"Priorisierung von Kanten im Peak mit {res.Count} resultierenden Diensten\")" });
                 //Console.WriteLine("[" + String.Join(",", res.Select(_ => "[" + String.Join(",", _.Vertices.Select(x => "[" + x.Interval[0] + "," + x.Interval[1] + "]")) + "]")) + "]");
                 return (res, 1);
             }
@@ -613,6 +628,24 @@ namespace _3D_Matching.Solvers
             var vertices = edges.SelectMany(e => e.Vertices).Distinct().ToList();
             var xValues = vertices.SelectMany(_ => _.Interval).Distinct().OrderBy(_ => _).ToList();
             var yValues = new int[xValues.Count];
+            foreach (var vertex in vertices)
+            {
+                for (int i = 0; i < yValues.Length; i++)
+                {
+                    if (xValues[i] < vertex.Interval[0])
+                        continue;
+                    if (xValues[i] >= vertex.Interval[1])
+                        break;
+                    yValues[i]++;
+                }
+            }
+            return (xValues.ToArray(), yValues);
+        }
+
+        private (int[] xValues, int[] yValues) ComputeOverlapGraph(List<Edge> edges, int[] xValues)
+        {
+            var vertices = edges.SelectMany(e => e.Vertices).Distinct().ToList();
+            var yValues = new int[xValues.Length];
             foreach (var vertex in vertices)
             {
                 for (int i = 0; i < yValues.Length; i++)
