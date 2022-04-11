@@ -7,39 +7,54 @@ using ORT = Google.OrTools.LinearSolver;
 using Gurobi;
 using Coin = Sonnet;
 using COIN;
+using _3D_Matching.Tests;
 
 namespace _3D_Matching.Solvers
 {
-    class MIP : IMinimumEdgecoveringSolver
+
+    enum MIPModi : int
+    {
+        GUROBI,
+        ORT,
+        COINOR,
+
+    }
+    class MIP : IMinimumPerfectMatchingSolver
     {
 
         //ORT.Solver solver = ORT.Solver.CreateSolver("SCIP");
          
         Random _random = new Random();
-        private string _solver;
+        private MIPModi _mode;
         private double _usePerc2D;
         private double _usePerc3D;
 
-        public MIP(double usePerc2D = 1.0 ,double usePerc3D = 1.0, string solver = "GUROBI")
+        public MIP(MIPModi mode = 0,double usePerc2D = 1.0 ,double usePerc3D = 1.0)
         {
             _usePerc2D = usePerc2D;
             _usePerc3D = usePerc3D;
-            _solver = solver;
+            _mode = mode;
         }
 
-        public override String Name { get => this.GetType().Name + "|" + _solver + "|" + Math.Round(_usePerc2D * 100) + "%|"+ Math.Round( _usePerc3D *100) +"%"; }
+        public override String Name { get => this.GetType().Name + "|" + _mode + "|" + Math.Round(_usePerc2D * 100) + "%|"+ Math.Round( _usePerc3D *100) +"%"; }
         public override (List<Edge> cover, int iterations)  Run(Dictionary<string, double> parameters)
         {
-            var edges = _graph.Edges.Where(_ => ((_random.NextDouble() < _usePerc2D && _.VertexCount == 2)||(_random.NextDouble() < _usePerc3D && _.VertexCount==3)|| _.Vertices.Count==1)).ToList();
 
-            if (_solver == "GUROBI")
+            var edges = _graph.Edges;
+            if (_usePerc2D != 1.0 || _usePerc3D != 1.0)
+            {
+                edges = _graph.Edges.Where(_ => ((_random.NextDouble() < _usePerc2D && _.VertexCount == 2) || (_random.NextDouble() < _usePerc3D && _.VertexCount == 3) || _.Vertices.Count == 1)).ToList();
+            }
+
+            if (_mode == MIPModi.GUROBI)
             {
                 GRBEnv env = new GRBEnv(true);
                 env.Set("OutputFlag", "0");
                 env.Start();
+                
 
                 GRBModel solver = new GRBModel(env);
-                var x = edges.Select(_ => solver.AddVar(0.0, 1.0, 1.0,GRB.BINARY,String.Join(" ", _.Vertices))).ToArray();
+                var x = edges.Select(_ => solver.AddVar(0.0, 1.0,/* _.VertexCount==3?0.9999: */1.0,GRB.BINARY,String.Join(" ", _.Vertices))).ToArray();
                 for (int i = 0; i < _graph.Vertices.Count; i++)
                 {
                     //var constraint = solver.MakeConstraint(1, 1, "");
@@ -56,12 +71,24 @@ namespace _3D_Matching.Solvers
                 var res = new List<Edge>();
                 for (int j = 0; j < x.Length; j++)
                 {
-                    if (x[j].X!=0)//Variable(j).SolutionValue() != 0)
+                    if (x[j].X!=0)
                         res.Add(edges[j]);
                 }
+                //Plot.CreateIntervals(res, true, new List<string>() { "plt.title(\"Optimum mit " + res.Count + " Diensten \")" });
+
+                //var balken1 = res.Where(_ => _.VertexCount == 1).Count();
+                //var balken2 = res.Where(_ => _.VertexCount == 2).Count();
+                //var balken3 = res.Where(_ => _.VertexCount == 3).Count();
+
+                //Console.WriteLine("["+balken1 + "," + balken2 + "," + balken3 + "]");
+
+
+
+
+
                 return (res, 1);
             }
-            else if (_solver == "ORT")
+            else if (_mode == MIPModi.ORT)
             {
                 var solver = ORT.Solver.CreateSolver("SCIP");
                 var x = edges.Select(_ => solver.MakeIntVar(0.0, 1, String.Join(" ", _.Vertices))).ToArray();
@@ -90,7 +117,7 @@ namespace _3D_Matching.Solvers
                 }
                 return (res, 1);
             }
-            else if (_solver == "CoinOR")
+            else if (_mode == MIPModi.COINOR)
             {
                 Coin.Model model = new Coin.Model();
 
