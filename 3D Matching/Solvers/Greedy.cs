@@ -222,7 +222,7 @@ namespace _3D_Matching.Solvers
                     v.IsCovered = false;
                 }
                 var res = new List<Edge>();
-                foreach (var edge in _edges.OrderBy(_ => -_.Vertices.Count -_.Vertices.Select(_=>_.AdjEdges.Count).Sum()))
+                foreach (var edge in _edges.OrderBy(_ => -_.Vertices.Count*10000 -_.Vertices.Select(_=>_.AdjEdges.Count).Sum()))
                 {
                     if (edge.AllVerticesAreUncovered())
                     {
