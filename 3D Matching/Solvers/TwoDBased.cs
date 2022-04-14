@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace _3D_Matching.Solvers
 {
-    public class TwoDBased : IMinimumEdgecoveringSolver
+    public class TwoDBased : IMinimumPerfectMatchingSolver
     {
         Random _random = new Random();
         String _type = "";
@@ -29,9 +29,8 @@ namespace _3D_Matching.Solvers
             double maxIter = parameters["maxIter"];
             var time = new Stopwatch();
             time.Start();
-            _graph.SetVertexAdjEdges();
+            _graph.ResetVertexAdjEdges(); //set genügt auch, aber macht probleme, falls auf Graph verschiedene Löser benutzt werden
             var iteration = 0;
-            //var tmpSolver = new ORTS();
 
             _graph.InitializeFor2DMatchin();
             List<Edge> res = new List<Edge>();
@@ -495,19 +494,7 @@ namespace _3D_Matching.Solvers
 
 
             }
-
-
-
-
-
-
-
-
-
-
-
-
-                return (res, iteration);
+            return (res, iteration);
         }
 
         private void DoContract(Vertex vertexA, Vertex vertexB)
