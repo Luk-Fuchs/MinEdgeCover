@@ -1500,7 +1500,8 @@ namespace _3D_Matching
             Vertices = vertices;
             VerticesIds = vertices.Select(_ => _.Id).ToList();
             VertexCount = Vertices.Count;
-            vertex0 = Vertices[0];
+            if (VertexCount >= 1)
+                vertex0 = Vertices[0];
             if (VertexCount >= 2)
                 vertex1 = Vertices[1];
             if (VertexCount >= 3)
