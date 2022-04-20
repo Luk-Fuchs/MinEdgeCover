@@ -36,7 +36,7 @@ namespace _3D_Matching.Tests
             if (reorde)
                 //cover = cover.OrderBy(_ => _.Vertices.Min(x => x.Interval[0])).ToList();
                 cover = cover.OrderBy(_ => -_.Vertices.Max(x => x.Interval[1])).ToList();
-            var csvString = "[" + String.Join(",", cover.Select(_ => "[" + String.Join(",", _.Vertices.Select(x => "[" + x.Interval[0] + "," + x.Interval[1] + "]")) + "]")) + "]";
+            var csvString = "[" + String.Join(",", cover.Select(_ => (_.Vertices.Count == 0 ? "[]" : "[" + String.Join(",", _.Vertices.Select(x => "[" + x.Interval[0] + "," + x.Interval[1] + "]")) + "]"))) + "]";
 
             if (additionalPythonLines != null)
             {
