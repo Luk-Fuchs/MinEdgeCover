@@ -27,10 +27,12 @@ for row_index, row in enumerate(intervals):
     for x in row:
         if(len(row)==1):
             plt.plot(x,[row_index,row_index], "r")
-        if(len(row)==2):
+        elif(len(row)==2):
             plt.plot(x,[row_index,row_index],"y")
-        if(len(row)==3):
+        elif(len(row)==3):
             plt.plot(x,[row_index,row_index], "g")
+        else:
+            plt.plot(x,[row_index,row_index])
     
 
 for row_index, row in enumerate(intervals):
