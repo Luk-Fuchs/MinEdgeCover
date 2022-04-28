@@ -38,8 +38,18 @@ plt.title(dict["title"])
 plt.xlabel(dict["xLabel"])
 plt.ylabel(dict["yLabel"])
 plt.savefig("C:/Users/LFU/Desktop/tmp/fig" + str(time.time()) + ".pdf", dpi=fig.dpi)
+
+if(dict["logarithmic"]=="True"):
+    plt.semilogy()
+
+
+plt.ylim([0,max(y)*1.1])
+
 if dict["show"]=="True":
     plt.show()
+
+
+
 #x = f.readline()
 #y = f.readline()
 #x = f.readline()

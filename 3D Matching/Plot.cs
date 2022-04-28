@@ -12,7 +12,7 @@ namespace _3D_Matching.Tests
     public class Plot
     {
         static string _currentFile = @"C:\Users\LFU\Desktop\Masterarbeit\Ausarbeitung\images\Data_And_Plots\Plots_Online\size_by_iteration.txt";
-        public static void CreateFigure(IEnumerable<double> yValue, IEnumerable<double> xValue = null, String title = "", String xLable = "", String yLable = "", String plottype = "bar", bool show = true, String horizontal = "", String vertical = "")
+        public static void CreateFigure(IEnumerable<double> yValue, IEnumerable<double> xValue = null, String title = "", String xLable = "", String yLable = "", String plottype = "bar", bool show = true, String horizontal = "", String vertical = "",bool logarithmic = false)
         {
             var csvDataString = "";
             csvDataString += (xValue == null ? String.Join(",", Enumerable.Range(0, yValue.Count())) : String.Join(",", xValue.Select(_ => _.ToString().Replace(",", ".")))) + ";";
@@ -27,7 +27,8 @@ namespace _3D_Matching.Tests
             csvParameterString += "show," + show + ";";
             csvParameterString += "horizontal," + horizontal + ";";
             csvParameterString += "vertical," + vertical + ";";
-            csvParameterString += "plottype," + plottype;
+            csvParameterString += "plottype," + plottype + ";";
+            csvParameterString += "logarithmic," + logarithmic;
             System.IO.File.WriteAllText(@"C:\Users\LFU\Desktop\tmp\parameters.csv", csvParameterString);
             RunPythonSkript(@"C:\Users\LFU\Documents\GitHub\MinEdgeCover\PythonPlots\plot.py");
         }
