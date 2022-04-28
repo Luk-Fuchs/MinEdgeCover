@@ -12,14 +12,14 @@ using _3D_Matching.Tests;
 namespace _3D_Matching.Solvers
 {
 
-    enum MIPModi : int
+    public enum MIPModi : int
     {
         GUROBI,
         ORT,
         COINOR,
 
     }
-    class MIP : IMinimumPerfectMatchingSolver
+    public class MIP : IMinimumPerfectMatchingSolver
     {
 
         //ORT.Solver solver = ORT.Solver.CreateSolver("SCIP");
