@@ -32,7 +32,7 @@ for row_index, row in enumerate(intervals):
         elif(len(row)==3):
             plt.plot(x,[row_index,row_index], "g")
         else:
-            plt.plot(x,[row_index,row_index])
+            plt.plot(x,[row_index,row_index], c=(0.9,0.9,0.9))
     
 
 for row_index, row in enumerate(intervals):
