@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace _3D_Matching.Solvers
 {
 
-    enum GreedyModi : int
+    enum GreedyModi 
     {
         byTime,
         byTimeReverse,
@@ -202,7 +202,11 @@ namespace _3D_Matching.Solvers
 
                     //Console.WriteLine(remainingEdges.Count);
                     (var xValues, var yValues) = ComputeOverlapGraph(remainingEdges);
-                    var orderedRemainingEdges = remainingEdges.OrderBy(_ => -ComputeIntergral(xValues.ToList(), yValues, _)).ToList();
+                    //var bestEdge = remainingEdges.OrderBy(_ => -_.Vertices.Select(v=>v.Interval[1]-v.Interval[0]).Sum()).First();
+                    //var lengtOfBestEdge = bestEdge.Vertices.Select(v => v.Interval[1] - v.Interval[0]).Sum();
+                    var maxYValue = yValues.Max();
+                    //var orderedRemainingEdges = remainingEdges.Where(_=>Math.Abs( _.Vertices.Select(v => v.Interval[1] - v.Interval[0]).Sum() -lengtOfBestEdge)<3600).OrderBy(_ => -ComputeIntegral(xValues.ToList(), yValues, _)).ToList();
+                    var orderedRemainingEdges = remainingEdges.OrderBy(_ => -(Math.Pow(_.Vertices.Select(v => v.Interval[1] - v.Interval[0]).Sum(), 0.5) * maxYValue + ComputeIntegral(xValues.ToList(), yValues, _))).ToList();
                     //var orderedRemainingEdges = remainingEdges.OrderBy(_ => -ComputeIntergral(xValues.ToList(), yValues.Select(_ => _ * _).ToArray(), _)).ToList();
                     var newMatchingEdge = orderedRemainingEdges[0];
                     res.Add(newMatchingEdge);
@@ -211,7 +215,7 @@ namespace _3D_Matching.Solvers
                     remainingEdges = remainingEdges.Where(_ => _.Vertices.Intersect(coveredVertices).Count() == 0).ToList();
                 }
 
-                //Plot.CreateIntervals(res, false, new List<string>() { "plt.title(\"Priorisierung mittels Integration mit " + res.Count + " entstandenen Diensten \")" });
+                Plot.CreateIntervals(res, false, new List<string>() { "plt.title(\"Priorisierung mittels Integration mit " + res.Count + " entstandenen Diensten \")" });
                 //Plot.CreateIntervals(res);
                 return (res, -1);
             }
@@ -660,7 +664,7 @@ namespace _3D_Matching.Solvers
             return (xValues.ToArray(), yValues);
         }
 
-        private static int ComputeIntergral(List<int> xValues, int[] yValues, Edge edge)
+        private static int ComputeIntegral(List<int> xValues, int[] yValues, Edge edge)
         {
             int integralE = 0;
             foreach (var v in edge.Vertices)
