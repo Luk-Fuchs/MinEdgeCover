@@ -15,11 +15,16 @@ namespace _3D_Matching.Solvers
             var rightNewVertices = vertices.Select(_ => new Vertex(10_000+_.Id)).ToList();
             var bipartEdges = new List<Edge>();
 
+
             for(int l = 0; l<leftNewVertices.Count;l++)
             {
             for(int r = 0; r<rightNewVertices.Count;r++)
                 {
-                    if (!vertices[l].Intersects(vertices[r]) && vertices[l].Interval[0]< vertices[r].Interval[0])
+                    //if (!vertices[l].Intersects(vertices[r]) && vertices[l].Interval[0]< vertices[r].Interval[0])
+                    //{
+                    //    bipartEdges.Add(new Edge(new List<Vertex>() { leftNewVertices[l], rightNewVertices[r] }));
+                    //}
+                    if (vertices[l].NeighboursFor2DMatching.Contains(vertices[r]) && vertices[l].Interval[0] < vertices[r].Interval[0])
                     {
                         bipartEdges.Add(new Edge(new List<Vertex>() { leftNewVertices[l], rightNewVertices[r] }));
                     }
